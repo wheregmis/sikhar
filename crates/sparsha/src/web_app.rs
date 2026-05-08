@@ -1900,7 +1900,7 @@ mod tests {
 mod wasm_tests {
     use super::*;
     use serde_json::json;
-    use sparsha_core::Rect;
+    use sparsha_core::{Color, Rect};
     use sparsha_widgets::AccessibilityRole;
     use wasm_bindgen_test::*;
 

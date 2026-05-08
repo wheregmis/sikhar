@@ -36,6 +36,32 @@ Internal/provisional:
 - internal platform adapters under `crates/sparsha/src/platform/`
 - internal runtime orchestration under `crates/sparsha/src/runtime_core.rs`, including `RuntimeHost`
 
+## Runtime Boundary
+
+The shared runtime flow is intentionally internal for 1.0:
+
+1. `RuntimeHost` rebuilds the widget tree and asks `platform::layout` to compute the `LayoutTree`.
+2. Native and web host events are normalized by `platform::events` into `sparsha_input::InputEvent` before widget dispatch.
+3. Widget painting emits backend-neutral `sparsha_render::DrawList` commands.
+4. `platform::draw` hands the draw frame to the active backend: native GPU rendering on desktop, retained DOM plus hybrid GPU surfaces on web.
+
+Stable seams:
+
+- `LayoutTree`, `ComputedLayout`, and `WidgetId` remain owned by `sparsha-layout`.
+- `InputEvent` remains the only cross-platform event model consumed by widgets and shared runtime dispatch.
+- `DrawCommand`, `DrawList`, and `TextRun` remain backend-neutral render commands owned by `sparsha-render`.
+
+Provisional adapter implementations:
+
+- `platform::layout::{LayoutViewport, compute_platform_layout}` is an internal adapter contract, not a public layout API.
+- `platform::events::{NativeEventTranslator, WebEventTranslator, PlatformShortcutPolicy}` is internal host-event glue.
+- `platform::draw::{PlatformDrawBackend, PlatformDrawFrame}` is an internal backend contract. It can change while native GPU, retained DOM, and hybrid-surface behavior continues to mature.
+
+Contributor rule:
+
+- Keep platform-specific host types such as `winit`, `web_sys`, DOM renderers, and native GPU surfaces inside `platform` adapters or the lifecycle shells that own those host objects.
+- Shared widget/runtime code should consume `LayoutTree`, `InputEvent`, and `DrawList` rather than branching on host platform types.
+
 Contributor rule:
 
 - new public authoring APIs must declare which lane they belong to

@@ -236,6 +236,7 @@ impl WebTextInputBridge {
         element.set_attribute("autocorrect", "off")?;
         element.set_attribute("autocapitalize", "off")?;
         element.set_attribute("spellcheck", "false")?;
+        element.set_tab_index(-1);
         let style = element.style();
         style.set_property("position", "absolute")?;
         style.set_property("left", "-10000px")?;
@@ -411,6 +412,7 @@ pub(crate) fn create_semantic_element(
             textarea.set_value(node.value.as_deref().unwrap_or_default());
             textarea.unchecked_into::<HtmlElement>()
         }
+        AccessibilityRole::Label => document.create_element("span")?.dyn_into::<HtmlElement>()?,
         _ => document.create_element("div")?.dyn_into::<HtmlElement>()?,
     };
 
@@ -526,6 +528,94 @@ mod wasm_tests {
     }
 
     #[wasm_bindgen_test]
+    fn semantic_label_node_uses_text_native_span() {
+        let element = create_semantic_element(
+            &document(),
+            &AccessibilityNodeSnapshot {
+                id: 3,
+                path: vec![0],
+                role: AccessibilityRole::Label,
+                label: Some("Status ready".to_owned()),
+                description: None,
+                value: None,
+                hidden: false,
+                disabled: false,
+                checked: None,
+                actions: Vec::new(),
+                bounds: Rect::new(0.0, 0.0, 120.0, 24.0),
+                children: Vec::new(),
+            },
+        )
+        .expect("semantic label");
+
+        assert_eq!(element.tag_name(), "SPAN");
+        assert_eq!(element.text_content().as_deref(), Some("Status ready"));
+        assert_eq!(
+            element.get_attribute("aria-label").as_deref(),
+            Some("Status ready")
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn semantic_button_node_uses_native_button() {
+        let element = create_semantic_element(
+            &document(),
+            &AccessibilityNodeSnapshot {
+                id: 4,
+                path: vec![0],
+                role: AccessibilityRole::Button,
+                label: Some("Submit".to_owned()),
+                description: None,
+                value: None,
+                hidden: false,
+                disabled: false,
+                checked: None,
+                actions: vec![AccessibilityAction::Focus, AccessibilityAction::Click],
+                bounds: Rect::new(0.0, 0.0, 96.0, 40.0),
+                children: Vec::new(),
+            },
+        )
+        .expect("semantic button");
+
+        assert_eq!(element.tag_name(), "BUTTON");
+        assert_eq!(element.text_content().as_deref(), Some("Submit"));
+        assert_eq!(
+            element.get_attribute("aria-label").as_deref(),
+            Some("Submit")
+        );
+    }
+
+    #[wasm_bindgen_test]
+    fn semantic_checkbox_node_uses_native_checkbox() {
+        let element = create_semantic_element(
+            &document(),
+            &AccessibilityNodeSnapshot {
+                id: 5,
+                path: vec![0],
+                role: AccessibilityRole::CheckBox,
+                label: Some("Enable alerts".to_owned()),
+                description: None,
+                value: None,
+                hidden: false,
+                disabled: false,
+                checked: Some(true),
+                actions: vec![AccessibilityAction::Focus, AccessibilityAction::Click],
+                bounds: Rect::new(0.0, 0.0, 24.0, 24.0),
+                children: Vec::new(),
+            },
+        )
+        .expect("semantic checkbox");
+        let input = element.dyn_into::<HtmlInputElement>().expect("checkbox");
+
+        assert_eq!(input.type_(), "checkbox");
+        assert!(input.checked());
+        assert_eq!(
+            input.get_attribute("aria-label").as_deref(),
+            Some("Enable alerts")
+        );
+    }
+
+    #[wasm_bindgen_test]
     fn semantic_text_input_node_preserves_value_and_label() {
         let element = create_semantic_element(
             &document(),
@@ -552,6 +642,37 @@ mod wasm_tests {
     }
 
     #[wasm_bindgen_test]
+    fn semantic_multiline_text_input_node_uses_native_textarea() {
+        let element = create_semantic_element(
+            &document(),
+            &AccessibilityNodeSnapshot {
+                id: 8,
+                path: vec![0],
+                role: AccessibilityRole::MultilineTextInput,
+                label: Some("Notes".to_owned()),
+                description: None,
+                value: Some("First line\nSecond line".to_owned()),
+                hidden: false,
+                disabled: false,
+                checked: None,
+                actions: vec![AccessibilityAction::Focus, AccessibilityAction::SetValue],
+                bounds: Rect::new(10.0, 20.0, 160.0, 96.0),
+                children: Vec::new(),
+            },
+        )
+        .expect("semantic textarea");
+        let textarea = element
+            .dyn_into::<HtmlTextAreaElement>()
+            .expect("multiline text input");
+
+        assert_eq!(textarea.value(), "First line\nSecond line");
+        assert_eq!(
+            textarea.get_attribute("aria-label").as_deref(),
+            Some("Notes")
+        );
+    }
+
+    #[wasm_bindgen_test]
     fn web_platform_tracks_text_focus_suppression() {
         let host = document()
             .create_element("div")
@@ -571,6 +692,18 @@ mod wasm_tests {
         assert!(!platform.accessibility_text_focus_matches_widget_focus(&registry, None));
         platform.sync_text_input_bridge(None, true);
         assert!(!platform.text_input_is_syncing());
+    }
+
+    #[wasm_bindgen_test]
+    fn text_input_bridge_stays_out_of_browser_tab_order() {
+        let host = document()
+            .create_element("div")
+            .expect("host")
+            .dyn_into::<HtmlElement>()
+            .expect("html");
+        let bridge = WebTextInputBridge::new(&document(), &host).expect("bridge");
+
+        assert_eq!(bridge.element().tab_index(), -1);
     }
 
     #[test]

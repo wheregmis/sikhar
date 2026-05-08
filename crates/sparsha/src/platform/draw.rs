@@ -221,6 +221,8 @@ mod tests {
                 viewport_height: 240.0,
                 scale_factor: 2.0,
                 elapsed_time: 1.25,
+                #[cfg(target_arch = "wasm32")]
+                surface_frames: &[],
             })
             .expect("recording backend is infallible");
 

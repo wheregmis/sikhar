@@ -10,15 +10,24 @@ test("counter starter paints the Material-style shell and increments", async ({
 
   await expect(page).toHaveTitle(/Sparsha Counter/);
   await expect(
-    page.getByText("Sparsha Demo Home Page", { exact: true }),
+    page
+      .locator(".sparsha-dom-root > div:not(.sparsha-semantic-root)")
+      .filter({ hasText: "Sparsha Demo Home Page" })
+      .first(),
   ).toBeVisible();
+  await expect(
+    page
+      .locator(".sparsha-semantic-root span")
+      .filter({ hasText: "Sparsha Demo Home Page" })
+      .first(),
+  ).toHaveText("Sparsha Demo Home Page");
   await expect(
     page.getByText("You have pushed the button this many times:", {
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByText("0", { exact: true }).last()).toBeVisible();
+  await expect(page.getByText("0", { exact: true }).first()).toBeVisible();
 
-  await page.getByRole("button", { name: "+" }).click({ force: true });
-  await expect(page.getByText("1", { exact: true }).last()).toBeVisible();
+  await page.getByRole("button", { name: "Increment counter" }).click({ force: true });
+  await expect(page.getByText("1", { exact: true }).first()).toBeVisible();
 });
