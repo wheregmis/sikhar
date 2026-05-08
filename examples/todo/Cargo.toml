@@ -3,6 +3,10 @@ name = "todo"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+hotpatch = ["sparsha/hotpatch"]
+
 [[bin]]
 name = "todo"
 path = "src/main.rs"

@@ -1,10 +1,10 @@
 [application]
-name = "counter"
+name = "todo"
 public_dir = "../web-public"
 
 [web.resource.dev]
 script = ["/dioxus-hotpatch-wasm-bindgen-shim.js"]
 
 [bundle]
-identifier = "dev.sparsha.counter"
+identifier = "dev.sparsha.todo"
 version = "0.1.0"

@@ -29,8 +29,8 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
-      - name: Install Trunk
-        run: cargo install trunk --locked
+      - name: Install Dioxus CLI
+        run: cargo install dioxus-cli --version 0.7.9 --locked
       - name: Build showcase web bundle
         run: ./scripts/web-build-example.sh showcase
       - name: Prepare GitHub Pages artifact

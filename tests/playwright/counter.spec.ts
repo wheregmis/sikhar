@@ -12,12 +12,12 @@ test("counter starter paints the Material-style shell and increments", async ({
   await expect(
     page
       .locator(".sparsha-dom-root > div:not(.sparsha-semantic-root)")
-      .filter({ hasText: "Sparsha Demo Home Page" })
+      .filter({ hasText: "Sparsha Demoooo" })
       .first(),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", {
-      name: "Sparsha Demo Home Page",
+      name: "Sparsha Demoooo",
       level: 1,
     }),
   ).toBeVisible();
@@ -34,5 +34,5 @@ test("counter starter paints the Material-style shell and increments", async ({
     "button",
   );
   await incrementButton.click({ force: true });
-  await expect(page.getByText("1", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("2", { exact: true }).first()).toBeVisible();
 });

@@ -1,10 +1,10 @@
 [application]
-name = "counter"
+name = "fractal-clock"
 public_dir = "../web-public"
 
 [web.resource.dev]
 script = ["/dioxus-hotpatch-wasm-bindgen-shim.js"]
 
 [bundle]
-identifier = "dev.sparsha.counter"
+identifier = "dev.sparsha.fractal_clock"
 version = "0.1.0"

@@ -164,18 +164,20 @@ cargo run -p showcase
 cargo run -p todo
 ```
 
-Run the counter example with Subsecond hotpatching through the Dioxus CLI:
+Run any example with Subsecond hotpatching through the Dioxus CLI:
 
 ```bash
 dx serve --hotpatch --platform desktop --package counter --features hotpatch
 dx serve --hotpatch --platform web --package counter --features hotpatch
+dx serve --hotpatch --platform web --package todo --features hotpatch
 ```
 
-Serve the counter example on web through Dioxus:
+Serve an example on web through Dioxus:
 
 ```bash
 rustup target add wasm32-unknown-unknown
 dx serve --platform web --package counter --features hotpatch
+dx serve --platform web --package showcase
 ```
 
 Run the browser smoke suite:
@@ -198,7 +200,7 @@ Run the full local release-readiness suite:
 ./scripts/release-readiness.sh
 ```
 
-The counter example no longer carries a Trunk path; its web assets are served through Dioxus CLI. More detail lives in [examples/README.md](examples/README.md).
+Examples now use Dioxus CLI for web builds and serving; shared static files are declared by each `Dioxus.toml`. More detail lives in [examples/README.md](examples/README.md).
 
 ## Context
 
@@ -237,7 +239,7 @@ Canonical verification entrypoints:
 - `cargo test --workspace`
 - `cargo check -p counter -p layout-probe -p kitchen-sink -p fractal-clock -p hybrid-overlay -p showcase -p todo --target wasm32-unknown-unknown`
 
-`web-smoke.sh` builds and serves the non-counter static web examples, then runs the matching Playwright smoke suite against those pages. The counter web path is covered through `dx serve --platform web --package counter`.
+`web-smoke.sh` builds all static web examples with `dx build`, copies Dioxus output into each example's `dist/`, serves those pages, and runs the matching Playwright smoke suite.
 
 `wasm-browser-tests.sh` runs the checked-in `wasm_bindgen_test` browser entrypoints for `sparsha`.
 

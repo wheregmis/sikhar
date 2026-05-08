@@ -354,7 +354,7 @@ fn shipped_surface_documents_the_bon_authoring_paths() {
     assert!(examples_readme.contains("multi-example browser smoke suite"));
     assert!(examples_readme.contains("wasm-browser-tests.sh"));
     assert!(readme.contains("wasm-browser-tests.sh"));
-    assert!(readme.contains("web-smoke.sh` builds and serves"));
+    assert!(readme.contains("web-smoke.sh` builds all static web examples with `dx build`"));
     assert!(readme.contains("cx.viewport()"));
     assert!(examples_readme.contains("cx.viewport()"));
 }

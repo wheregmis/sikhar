@@ -32,22 +32,17 @@ cargo run -p todo
 
 ## Web
 
-The web development path uses Dioxus CLI. The counter example declares its worker asset in `Dioxus.toml` through `public_dir = "public"` so `dx serve` can serve `sparsha-worker.js` without relying on Trunk copy directives.
+The web development path uses Dioxus CLI. Each example has a `Dioxus.toml` that points at the shared `examples/web-public` directory, so `dx serve` can serve `sparsha-worker.js` and the Subsecond wasm-bindgen shim from the same shared asset root.
 
-Run the counter example with web hotpatching:
+Run an example with web hotpatching:
 
 ```bash
 rustup target add wasm32-unknown-unknown
 dx serve --hotpatch --platform web --package counter --features hotpatch
+dx serve --hotpatch --platform web --package todo --features hotpatch
 ```
 
-Some non-counter example directories still contain the checked-in files needed for the older Trunk static flow:
-
-- `index.html`
-- `Trunk.toml`
-- `sparsha-worker.js`
-
-Legacy repo-root static workflow:
+Dioxus repo-root static workflow:
 
 ```bash
 rustup target add wasm32-unknown-unknown
@@ -86,8 +81,6 @@ Run the full local release-readiness suite:
 ```bash
 ./scripts/release-readiness.sh
 ```
-
-Direct `trunk serve` from an example directory remains available for the legacy static flow, but Dioxus CLI is the active web iteration path.
 
 The public `showcase` example is also published through `.github/workflows/showcase-pages.yml`. Because it uses hash routing, the deployed Pages URL remains static-host safe for routes like `/#/rendering`.
 

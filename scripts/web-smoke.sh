@@ -17,6 +17,7 @@ cleanup() {
 trap cleanup EXIT
 
 declare -A EXAMPLE_PORTS=(
+  [counter]="${SPARSH_COUNTER_PORT:-4177}"
   [showcase]="${SPARSH_SHOWCASE_PORT:-4176}"
   [todo]="${SPARSH_TODO_PORT:-4175}"
   [kitchen-sink]="${SPARSH_KITCHEN_SINK_PORT:-4173}"
@@ -25,6 +26,7 @@ declare -A EXAMPLE_PORTS=(
 )
 
 declare -A EXAMPLE_URL_VARS=(
+  [counter]="SPARSH_COUNTER_URL"
   [showcase]="SPARSH_SHOWCASE_URL"
   [todo]="SPARSH_TODO_URL"
   [kitchen-sink]="SPARSH_KITCHEN_SINK_URL"
@@ -33,6 +35,7 @@ declare -A EXAMPLE_URL_VARS=(
 )
 
 declare -A EXAMPLE_SPEC_FILES=(
+  [counter]="tests/playwright/counter.spec.ts"
   [showcase]="tests/playwright/showcase.spec.ts"
   [todo]="tests/playwright/todo.spec.ts"
   [kitchen-sink]="tests/playwright/kitchen-sink.spec.ts"
@@ -51,7 +54,7 @@ if [[ ! -d "$PLAYWRIGHT_BROWSERS_PATH" && -z "${CHROME_PATH:-}" ]]; then
   exit 1
 fi
 
-for example in showcase todo kitchen-sink hybrid-overlay layout-probe; do
+for example in counter showcase todo kitchen-sink hybrid-overlay layout-probe; do
   echo "[web-smoke] building ${example}"
   "$ROOT_DIR/scripts/web-build-example.sh" "$example"
   port="${EXAMPLE_PORTS[$example]}"
@@ -60,7 +63,7 @@ for example in showcase todo kitchen-sink hybrid-overlay layout-probe; do
   SERVER_PIDS+=("$!")
 done
 
-for example in showcase todo kitchen-sink hybrid-overlay layout-probe; do
+for example in counter showcase todo kitchen-sink hybrid-overlay layout-probe; do
   port="${EXAMPLE_PORTS[$example]}"
   url="http://127.0.0.1:${port}/"
   for _ in {1..20}; do
@@ -82,6 +85,7 @@ if [[ "$#" -gt 0 ]]; then
   PLAYWRIGHT_TARGET=("$@")
 else
   PLAYWRIGHT_TARGET=(
+    "${EXAMPLE_SPEC_FILES[counter]}"
     "${EXAMPLE_SPEC_FILES[showcase]}"
     "${EXAMPLE_SPEC_FILES[todo]}"
     "${EXAMPLE_SPEC_FILES[kitchen-sink]}"

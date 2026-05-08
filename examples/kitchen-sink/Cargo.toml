@@ -3,6 +3,10 @@ name = "kitchen-sink"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+hotpatch = ["sparsha/hotpatch"]
+
 [[bin]]
 name = "kitchen-sink"
 path = "src/main.rs"

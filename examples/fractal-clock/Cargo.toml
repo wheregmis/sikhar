@@ -3,6 +3,10 @@ name = "fractal-clock"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+hotpatch = ["sparsha/hotpatch"]
+
 [[bin]]
 name = "fractal-clock"
 path = "src/main.rs"

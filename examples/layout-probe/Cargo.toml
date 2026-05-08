@@ -3,6 +3,10 @@ name = "layout-probe"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+hotpatch = ["sparsha/hotpatch"]
+
 [[bin]]
 name = "layout-probe"
 path = "src/main.rs"

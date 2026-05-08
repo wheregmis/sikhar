@@ -17,20 +17,24 @@ if [[ ! -d "$EXAMPLE_DIR" ]]; then
   exit 1
 fi
 
-if [[ "$EXAMPLE" == "counter" ]]; then
-  echo "counter web now uses Dioxus CLI:" >&2
-  echo "  dx serve --hotpatch --platform web --package counter --features hotpatch" >&2
-  exit 1
-fi
-
-TRUNK_ARGS=(build)
+DX_ARGS=(build --platform web --package "$EXAMPLE")
+PROFILE_DIR="debug"
 if [[ "$MODE" != "debug" ]]; then
-  TRUNK_ARGS+=(--release)
+  DX_ARGS+=(--release)
+  PROFILE_DIR="release"
 fi
 
 mkdir -p "$CARGO_HOME"
 
-(
-  cd "$EXAMPLE_DIR"
-  CARGO_HOME="$CARGO_HOME" NO_COLOR=true trunk "${TRUNK_ARGS[@]}"
-)
+cd "$ROOT_DIR"
+CARGO_HOME="$CARGO_HOME" NO_COLOR=true dx "${DX_ARGS[@]}"
+
+DX_PUBLIC="$ROOT_DIR/target/dx/$EXAMPLE/$PROFILE_DIR/web/public"
+if [[ ! -d "$DX_PUBLIC" ]]; then
+  echo "Dioxus build did not produce expected public output: $DX_PUBLIC" >&2
+  exit 1
+fi
+
+rm -rf "$EXAMPLE_DIR/dist"
+mkdir -p "$EXAMPLE_DIR/dist"
+cp -R "$DX_PUBLIC"/. "$EXAMPLE_DIR/dist"/

@@ -46,8 +46,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install Trunk
-        run: cargo install trunk --locked
+      - name: Install Dioxus CLI
+        run: cargo install dioxus-cli --version 0.7.9 --locked
       - name: Install web dependencies
         run: npm ci
       - name: Install Playwright browser

@@ -3,6 +3,10 @@ name = "showcase"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+hotpatch = ["sparsha/hotpatch"]
+
 [[bin]]
 name = "showcase"
 path = "src/main.rs"
