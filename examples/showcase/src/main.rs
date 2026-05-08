@@ -2,7 +2,7 @@ use sparsha::core::glam::Vec2;
 use sparsha::layout::taffy::prelude::{length, percent, AlignItems, JustifyContent, Size, Style};
 use sparsha::prelude::*;
 use sparsha::text::TextStyle;
-use sparsha::widgets::{current_theme, ButtonStyle, PaintContext, WidgetId};
+use sparsha::widgets::{current_theme, PaintContext, WidgetId};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
@@ -49,7 +49,7 @@ fn main() -> Result<(), sparsha::AppRunError> {
     *navigator_slot.borrow_mut() = Some(router.navigator());
 
     let theme = showcase_theme();
-    let background = theme.colors.background;
+    let background = theme.background_color();
 
     App::builder()
         .title("Sparsha Showcase")
@@ -176,16 +176,6 @@ impl ShowcaseLayout {
         }
     }
 
-    fn route_button_min_width(self) -> f32 {
-        if self.is_mobile() {
-            96.0
-        } else if self.is_tablet() {
-            108.0
-        } else {
-            120.0
-        }
-    }
-
     fn sidebar_width(self) -> f32 {
         if self.is_desktop() {
             320.0
@@ -272,28 +262,27 @@ fn rendering_atlas_height(viewport: ViewportInfo) -> f32 {
 }
 
 fn showcase_theme() -> Theme {
-    let mut theme = Theme::dark();
-    theme.colors.background = Color::from_hex(0x16181D);
-    theme.colors.surface = Color::from_hex(0x1D2128);
-    theme.colors.surface_variant = Color::from_hex(0x252A33);
-    theme.colors.surface_done = Color::from_hex(0x11161D);
-    theme.colors.text_primary = Color::from_hex(0xE8EDF4);
-    theme.colors.text_muted = Color::from_hex(0x96A0AE);
-    theme.colors.primary = Color::from_hex(0x2385B9);
-    theme.colors.primary_hovered = Color::from_hex(0x2F9AD2);
-    theme.colors.primary_pressed = Color::from_hex(0x176A93);
-    theme.colors.border = Color::from_hex(0x353B46);
-    theme.colors.border_focus = Color::from_hex(0x72C5EE);
-    theme.colors.disabled = Color::from_hex(0x586474);
-    theme.colors.input_background = Color::from_hex(0x151A22);
-    theme.colors.input_placeholder = Color::from_hex(0x6E7887);
-    theme.typography.body_size = 15.0;
-    theme.typography.title_size = 26.0;
-    theme.controls.control_height = 36.0;
-    theme.controls.scrollbar_thickness = 8.0;
-    theme.radii.md = 8.0;
-    theme.radii.lg = 14.0;
-    theme
+    Theme::dark()
+        .background(Color::from_hex(0x16181D))
+        .surface(Color::from_hex(0x1D2128))
+        .surface_variant(Color::from_hex(0x252A33))
+        .surface_done(Color::from_hex(0x11161D))
+        .text(Color::from_hex(0xE8EDF4))
+        .muted_text(Color::from_hex(0x96A0AE))
+        .brand_states(
+            Color::from_hex(0x2385B9),
+            Color::from_hex(0x2F9AD2),
+            Color::from_hex(0x176A93),
+        )
+        .border(Color::from_hex(0x353B46))
+        .focus(Color::from_hex(0x72C5EE))
+        .disabled(Color::from_hex(0x586474))
+        .input_background(Color::from_hex(0x151A22))
+        .input_placeholder(Color::from_hex(0x6E7887))
+        .type_scale(15.0, 12.0, 26.0, 14.0)
+        .control_size(36.0)
+        .scrollbar_thickness(8.0)
+        .radius(4.0, 8.0, 14.0)
 }
 
 fn showcase_shell(route: ShowcaseRoute, navigator: Navigator, viewport: ViewportInfo) -> Container {
@@ -305,7 +294,7 @@ fn showcase_shell(route: ShowcaseRoute, navigator: Navigator, viewport: Viewport
                 layout.viewport.width.max(1.0),
                 layout.viewport.height.max(1.0),
             )
-            .background(theme.colors.background)
+            .background(theme.background_color())
             .align_items(AlignItems::Center)
             .child(build_top_bar(route, navigator, layout))
             .child(
@@ -326,7 +315,7 @@ fn showcase_shell(route: ShowcaseRoute, navigator: Navigator, viewport: Viewport
             layout.viewport.width.max(1.0),
             layout.viewport.height.max(1.0),
         )
-        .background(theme.colors.background)
+        .background(theme.background_color())
         .align_items(AlignItems::Center)
         .child(build_top_bar(route, navigator, layout))
         .child(
@@ -379,7 +368,7 @@ fn build_top_bar(route: ShowcaseRoute, navigator: Navigator, layout: ShowcaseLay
                         Text::builder()
                             .content("A page-ready preview surface for widgets and visual checks.")
                             .font_size(13.0)
-                            .color(theme.colors.text_muted)
+                            .color(theme.muted_text_color())
                             .build(),
                     ),
             )
@@ -402,7 +391,7 @@ fn build_top_bar(route: ShowcaseRoute, navigator: Navigator, layout: ShowcaseLay
                         Text::builder()
                             .content("A page-ready preview surface for widgets and visual checks.")
                             .font_size(13.0)
-                            .color(theme.colors.text_muted)
+                            .color(theme.muted_text_color())
                             .build(),
                     ),
             )
@@ -412,8 +401,8 @@ fn build_top_bar(route: ShowcaseRoute, navigator: Navigator, layout: ShowcaseLay
     Container::column()
         .width(layout.content_width())
         .padding(layout.top_bar_padding())
-        .background(theme.colors.surface_done)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_done_color())
+        .border(1.0, theme.border_color())
         .child(top_bar)
 }
 
@@ -422,51 +411,26 @@ fn route_button(
     destination: ShowcaseRoute,
     active: bool,
     navigator: Navigator,
-    layout: ShowcaseLayout,
+    _layout: ShowcaseLayout,
 ) -> Button {
     let theme = current_theme();
-    let style = ButtonStyle {
-        background: if active {
-            theme.colors.primary_hovered
-        } else {
-            theme.colors.surface_variant
-        },
-        background_hovered: if active {
-            theme.colors.primary
-        } else {
-            theme.colors.surface
-        },
-        background_pressed: if active {
-            theme.colors.primary_pressed
-        } else {
-            theme.colors.surface_done
-        },
-        background_disabled: theme.colors.disabled,
-        text_color: if active {
-            Color::WHITE
-        } else {
-            theme.colors.text_primary
-        },
-        text_color_disabled: theme.colors.text_muted,
-        border_color: if active {
-            theme.colors.primary
-        } else {
-            theme.colors.border
-        },
-        border_width: 1.0,
-        corner_radius: 10.0,
-        padding_h: if layout.is_mobile() { 12.0 } else { 14.0 },
-        padding_v: if layout.is_mobile() { 7.0 } else { 8.0 },
-        font_size: if layout.is_mobile() { 12.0 } else { 13.0 },
-        min_width: layout.route_button_min_width(),
-        min_height: 34.0,
-    };
-
-    Button::builder()
-        .label(label)
-        .style(style)
-        .on_click(move || navigator.go(destination.path()))
-        .build()
+    if active {
+        Button::builder()
+            .label(label)
+            .background(theme.primary_hovered_color())
+            .text_color(theme.text_on_primary_color())
+            .corner_radius(10.0)
+            .on_click(move || navigator.go(destination.path()))
+            .build()
+    } else {
+        Button::builder()
+            .label(label)
+            .background(theme.surface_variant_color())
+            .text_color(theme.text_color())
+            .corner_radius(10.0)
+            .on_click(move || navigator.go(destination.path()))
+            .build()
+    }
 }
 
 fn sidebar_content(route: ShowcaseRoute, layout: ShowcaseLayout) -> Container {
@@ -527,7 +491,7 @@ fn sidebar_content(route: ShowcaseRoute, layout: ShowcaseLayout) -> Container {
                 .content(route.eyebrow())
                 .font_size(11.0)
                 .bold(true)
-                .color(theme.colors.primary)
+                .color(theme.primary_color())
                 .build(),
         )
         .child(
@@ -541,7 +505,7 @@ fn sidebar_content(route: ShowcaseRoute, layout: ShowcaseLayout) -> Container {
             Text::builder()
                 .content(route.summary())
                 .font_size(13.0)
-                .color(theme.colors.text_muted)
+                .color(theme.muted_text_color())
                 .build(),
         )
         .child(sidebar)
@@ -555,14 +519,14 @@ fn build_sidebar(route: ShowcaseRoute, layout: ShowcaseLayout) -> Container {
             .width(layout.sidebar_width())
             .fill_height()
             .flex_shrink(0.0)
-            .background(theme.colors.surface)
-            .border(1.0, theme.colors.border)
+            .background(theme.surface_color())
+            .border(1.0, theme.border_color())
             .child(Scroll::vertical(content).fill_height())
     } else {
         Container::column()
             .fill_width()
-            .background(theme.colors.surface)
-            .border(1.0, theme.colors.border)
+            .background(theme.surface_color())
+            .border(1.0, theme.border_color())
             .child(content)
     }
 }
@@ -572,8 +536,8 @@ fn sidebar_block(title: &'static str, lines: &[&'static str]) -> Container {
     let mut block = Container::column()
         .gap(10.0)
         .padding(14.0)
-        .background(theme.colors.surface_variant)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_variant_color())
+        .border(1.0, theme.border_color())
         .corner_radius(12.0)
         .child(
             Text::builder()
@@ -588,7 +552,7 @@ fn sidebar_block(title: &'static str, lines: &[&'static str]) -> Container {
             Text::builder()
                 .content(format!("• {}", line))
                 .font_size(13.0)
-                .color(theme.colors.text_muted)
+                .color(theme.muted_text_color())
                 .build(),
         );
     }
@@ -650,15 +614,15 @@ fn page_intro(route: ShowcaseRoute, detail: &'static str, layout: ShowcaseLayout
         .fill_width()
         .gap(10.0)
         .padding(layout.section_padding())
-        .background(theme.colors.surface_done)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_done_color())
+        .border(1.0, theme.border_color())
         .corner_radius(16.0)
         .child(
             Text::builder()
                 .content(route.eyebrow())
                 .font_size(11.0)
                 .bold(true)
-                .color(theme.colors.primary)
+                .color(theme.primary_color())
                 .build(),
         )
         .child(
@@ -672,7 +636,7 @@ fn page_intro(route: ShowcaseRoute, detail: &'static str, layout: ShowcaseLayout
             Text::builder()
                 .content(detail)
                 .font_size(14.0)
-                .color(theme.colors.text_muted)
+                .color(theme.muted_text_color())
                 .build(),
         )
 }
@@ -688,8 +652,8 @@ fn section_card(
         .fill_width()
         .gap(layout.card_gap())
         .padding(layout.section_padding())
-        .background(theme.colors.surface)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_color())
+        .border(1.0, theme.border_color())
         .corner_radius(16.0)
         .child(
             Text::builder()
@@ -702,7 +666,7 @@ fn section_card(
             Text::builder()
                 .content(description)
                 .font_size(13.0)
-                .color(theme.colors.text_muted)
+                .color(theme.muted_text_color())
                 .build(),
         )
         .child(content)
@@ -730,8 +694,8 @@ fn context_preview(
                             .width(width)
                             .gap(8.0)
                             .padding(14.0)
-                            .background(theme.colors.surface_variant)
-                            .border(1.0, theme.colors.border)
+                            .background(theme.surface_variant_color())
+                            .border(1.0, theme.border_color())
                             .corner_radius(12.0)
                             .child(
                                 Text::builder()
@@ -744,21 +708,21 @@ fn context_preview(
                                 Text::builder()
                                     .content(detail)
                                     .font_size(13.0)
-                                    .color(theme.colors.text_muted)
+                                    .color(theme.muted_text_color())
                                     .build(),
                             )
                             .child(
                                 Text::builder()
                                     .content(format!("Section: {section}"))
                                     .font_size(12.0)
-                                    .color(theme.colors.text_muted)
+                                    .color(theme.muted_text_color())
                                     .build(),
                             )
                             .child(
                                 Text::builder()
                                     .content(format!("Nearest tone: {tone}"))
                                     .font_size(12.0)
-                                    .color(theme.colors.primary)
+                                    .color(theme.primary_color())
                                     .build(),
                             )
                     })
@@ -797,22 +761,8 @@ fn build_context_card(layout: ShowcaseLayout) -> Container {
 
 fn build_controls_card(layout: ShowcaseLayout) -> Container {
     let theme = current_theme();
-    let secondary_style = ButtonStyle {
-        background: theme.colors.surface_variant,
-        background_hovered: theme.colors.surface_done,
-        background_pressed: theme.colors.surface_done,
-        background_disabled: theme.colors.disabled,
-        text_color: theme.colors.text_primary,
-        text_color_disabled: theme.colors.text_muted,
-        border_color: theme.colors.border,
-        border_width: 1.0,
-        corner_radius: 10.0,
-        padding_h: if layout.is_mobile() { 12.0 } else { 14.0 },
-        padding_v: if layout.is_mobile() { 7.0 } else { 8.0 },
-        font_size: if layout.is_mobile() { 13.0 } else { 14.0 },
-        min_width: if layout.is_mobile() { 132.0 } else { 148.0 },
-        min_height: if layout.is_mobile() { 34.0 } else { 36.0 },
-    };
+    let secondary_background = theme.surface_variant_color();
+    let secondary_text = theme.text_color();
 
     section_card(
         "Controls",
@@ -836,7 +786,9 @@ fn build_controls_card(layout: ShowcaseLayout) -> Container {
                             .child(
                                 Button::builder()
                                     .label("Secondary Action")
-                                    .style(secondary_style.clone())
+                                    .background(secondary_background)
+                                    .text_color(secondary_text)
+                                    .corner_radius(10.0)
                                     .on_click(|| {})
                                     .build(),
                             )
@@ -870,7 +822,7 @@ fn build_controls_card(layout: ShowcaseLayout) -> Container {
                                 "The goal is to show the default feel quickly.\nDeeper interaction coverage still lives in the other examples.",
                             )
                             .font_size(13.0)
-                            .color(theme.colors.text_muted)
+                            .color(theme.muted_text_color())
                             .build(),
                     )
             })
@@ -893,7 +845,7 @@ fn build_animation_card(layout: ShowcaseLayout) -> Container {
                         "Route changes use the shared slide + overlay transition.\nWithin the page, the preview runs a short implicit timeline so motion stays intentional and quiet.",
                     )
                     .font_size(13.0)
-                    .color(theme.colors.text_muted)
+                    .color(theme.muted_text_color())
                     .build(),
             ),
         layout,
@@ -923,7 +875,7 @@ fn rendering_hint_row(layout: ShowcaseLayout) -> Container {
         "Dark and light swatches stay balanced.",
         layout,
     ))
-    .background(theme.colors.background)
+    .background(theme.background_color())
 }
 
 fn rendering_hint_chip(
@@ -936,8 +888,8 @@ fn rendering_hint_chip(
         .gap(6.0)
         .padding(14.0)
         .min_size(if layout.is_mobile() { 0.0 } else { 220.0 }, 0.0)
-        .background(theme.colors.surface)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_color())
+        .border(1.0, theme.border_color())
         .corner_radius(12.0)
         .child(
             Text::builder()
@@ -950,7 +902,7 @@ fn rendering_hint_chip(
             Text::builder()
                 .content(detail)
                 .font_size(12.0)
-                .color(theme.colors.text_muted)
+                .color(theme.muted_text_color())
                 .build(),
         );
 
@@ -972,8 +924,8 @@ fn build_typography_card(layout: ShowcaseLayout) -> Container {
                 Container::column()
                     .gap(10.0)
                     .padding(16.0)
-                    .background(theme.colors.surface_variant)
-                    .border(1.0, theme.colors.border)
+                    .background(theme.surface_variant_color())
+                    .border(1.0, theme.border_color())
                     .corner_radius(12.0)
                     .child(
                         Text::builder()
@@ -1001,8 +953,8 @@ fn build_typography_card(layout: ShowcaseLayout) -> Container {
                 Container::column()
                     .gap(10.0)
                     .padding(16.0)
-                    .background(theme.colors.surface)
-                    .border(1.0, theme.colors.border)
+                    .background(theme.surface_color())
+                    .border(1.0, theme.border_color())
                     .corner_radius(12.0)
                     .child(
                         Text::builder()
@@ -1031,7 +983,7 @@ fn build_typography_card(layout: ShowcaseLayout) -> Container {
                     )
                     .font_size(13.0)
                     .line_height(1.4)
-                    .color(theme.colors.text_muted)
+                    .color(theme.muted_text_color())
                     .build(),
             ),
         layout,
@@ -1087,7 +1039,7 @@ fn build_inputs_card(layout: ShowcaseLayout) -> Container {
                                 "These fields use the same interaction model as the broader examples,\njust in a smaller, more curated setting.",
                             )
                             .font_size(13.0)
-                            .color(theme.colors.text_muted)
+                            .color(theme.muted_text_color())
                             .build(),
                     )
             })
@@ -1128,7 +1080,7 @@ fn build_viewport_card(layout: ShowcaseLayout) -> Container {
                         "The left sample should pan both ways. The right sample should recycle rows\ninstead of realizing the whole list at once.",
                     )
                     .font_size(13.0)
-                    .color(theme.colors.text_muted)
+                    .color(theme.muted_text_color())
                     .build(),
             ),
         layout,
@@ -1149,8 +1101,8 @@ fn build_scroll_sample() -> Container {
         .child(
             Container::column()
                 .height(220.0)
-                .background(theme.colors.surface_variant)
-                .border(1.0, theme.colors.border)
+                .background(theme.surface_variant_color())
+                .border(1.0, theme.border_color())
                 .corner_radius(12.0)
                 .child(
                     Semantics::new(Scroll::both(build_scroll_canvas()).fill())
@@ -1165,13 +1117,13 @@ fn build_scroll_canvas() -> Container {
         .gap(14.0)
         .padding(16.0)
         .size(560.0, 280.0)
-        .background(theme.colors.surface_done);
+        .background(theme.surface_done_color());
 
     for column in 0..4 {
         let accent = if column % 2 == 0 {
-            theme.colors.primary.with_alpha(0.22)
+            theme.primary_color().with_alpha(0.22)
         } else {
-            theme.colors.primary_hovered.with_alpha(0.18)
+            theme.primary_hovered_color().with_alpha(0.18)
         };
         row = row.child(
             Container::column()
@@ -1180,10 +1132,10 @@ fn build_scroll_canvas() -> Container {
                 .child(sample_tile(&format!("Lane {}", column + 1), accent, 72.0))
                 .child(sample_tile(
                     if column % 2 == 0 { "Scroll" } else { "Canvas" },
-                    theme.colors.surface_variant,
+                    theme.surface_variant_color(),
                     112.0,
                 ))
-                .child(sample_tile("Viewport", theme.colors.surface, 56.0)),
+                .child(sample_tile("Viewport", theme.surface_color(), 56.0)),
         );
     }
 
@@ -1196,7 +1148,7 @@ fn sample_tile(label: &str, color: Color, height: f32) -> Container {
         .height(height)
         .padding(14.0)
         .background(color)
-        .border(1.0, theme.colors.border)
+        .border(1.0, theme.border_color())
         .corner_radius(10.0)
         .child(
             Text::builder()
@@ -1221,8 +1173,8 @@ fn build_virtual_list_sample() -> Container {
         .child(
             Container::column()
                 .height(220.0)
-                .background(theme.colors.surface_variant)
-                .border(1.0, theme.colors.border)
+                .background(theme.surface_variant_color())
+                .border(1.0, theme.border_color())
                 .corner_radius(12.0)
                 .child(
                     Semantics::new(
@@ -1237,17 +1189,17 @@ fn build_virtual_list_sample() -> Container {
                                         .height(38.0)
                                         .padding(10.0)
                                         .background(if index % 2 == 0 {
-                                            theme.colors.surface
+                                            theme.surface_color()
                                         } else {
-                                            theme.colors.surface_done
+                                            theme.surface_done_color()
                                         })
-                                        .border(1.0, theme.colors.border)
+                                        .border(1.0, theme.border_color())
                                         .corner_radius(8.0)
                                         .child(
                                             Text::builder()
                                                 .content(format!("Row {}", index + 1))
                                                 .font_size(13.0)
-                                                .color(theme.colors.text_primary)
+                                                .color(theme.text_color())
                                                 .build(),
                                         ),
                                 )
@@ -1271,7 +1223,7 @@ fn rendering_atlas_card(layout: ShowcaseLayout) -> Container {
             Container::column()
                 .padding(RENDERING_ATLAS_CARD_PADDING)
                 .background(Color::from_hex(0x0B0E13))
-                .border(1.0, theme.colors.border)
+                .border(1.0, theme.border_color())
                 .corner_radius(12.0)
                 .child(RenderingAtlas::new()),
         ),
@@ -1346,17 +1298,17 @@ impl Widget for MotionPreview {
         }
 
         let panel = lerp_color(
-            theme.colors.surface_done,
-            theme.colors.primary.with_alpha(0.18),
+            theme.surface_done_color(),
+            theme.primary_color().with_alpha(0.18),
             value,
         );
-        ctx.fill_bordered_rect(bounds, panel, 14.0, 1.0, theme.colors.border);
+        ctx.fill_bordered_rect(bounds, panel, 14.0, 1.0, theme.border_color());
 
         let beam_width = bounds.width * 0.3;
         let beam_x = bounds.x + 14.0 + (bounds.width - beam_width - 28.0) * value;
         ctx.fill_rounded_rect(
             Rect::new(beam_x, bounds.y + 14.0, beam_width, bounds.height - 28.0),
-            theme.colors.primary.with_alpha(0.2),
+            theme.primary_color().with_alpha(0.2),
             12.0,
         );
 
@@ -1369,21 +1321,21 @@ impl Widget for MotionPreview {
             let x = bounds.x + 16.0 + index as f32 * (width + chip_gap);
             ctx.fill_rounded_rect(
                 Rect::new(x, chip_y, width, 12.0),
-                theme.colors.border_focus.with_alpha(alpha.clamp(0.0, 0.72)),
+                theme.focus_color().with_alpha(alpha.clamp(0.0, 0.72)),
                 6.0,
             );
         }
 
-        let font_family = theme.typography.font_family.clone();
+        let font_family = theme.font_family_name();
         let title = TextStyle::default()
-            .with_family(font_family.clone())
+            .with_family(font_family)
             .with_size(15.0)
-            .with_color(theme.colors.text_primary)
+            .with_color(theme.text_color())
             .bold();
         let body = TextStyle::default()
             .with_family(font_family)
             .with_size(12.0)
-            .with_color(theme.colors.text_muted);
+            .with_color(theme.muted_text_color());
 
         ctx.draw_text(
             "Implicit animation preview",
@@ -1437,7 +1389,7 @@ impl Widget for RenderingAtlas {
 
 fn scene_label_style(size: f32, color: Color) -> TextStyle {
     TextStyle::default()
-        .with_family(current_theme().typography.font_family)
+        .with_family(current_theme().font_family_name())
         .with_size(size)
         .with_color(color)
 }
@@ -1490,7 +1442,7 @@ fn rendering_atlas_scene(ctx: &mut PaintContext) {
 fn pixel_alignment_scene(ctx: &mut PaintContext, bounds: Rect) {
     let theme = current_theme();
     let bounds = bounds.inset(2.0);
-    let text = scene_label_style(11.0, theme.colors.text_muted);
+    let text = scene_label_style(11.0, theme.muted_text_color());
     let bright = Color::WHITE.with_alpha(0.95);
     let dim = Color::from_hex(0x090B0F).with_alpha(0.95);
 
@@ -1499,7 +1451,7 @@ fn pixel_alignment_scene(ctx: &mut PaintContext, bounds: Rect) {
         Color::from_hex(0x080A0F),
         14.0,
         1.0,
-        theme.colors.border,
+        theme.border_color(),
     );
 
     let vertical_origin = Vec2::new(bounds.x + 18.0, bounds.y + 36.0);
@@ -1540,7 +1492,7 @@ fn pixel_alignment_scene(ctx: &mut PaintContext, bounds: Rect) {
 fn stroke_and_clip_scene(ctx: &mut PaintContext, bounds: Rect) {
     let theme = current_theme();
     let bounds = bounds.inset(2.0);
-    let text = scene_label_style(11.0, theme.colors.text_muted);
+    let text = scene_label_style(11.0, theme.muted_text_color());
     let ink = Color::WHITE.with_alpha(0.92);
 
     ctx.fill_bordered_rect(
@@ -1548,7 +1500,7 @@ fn stroke_and_clip_scene(ctx: &mut PaintContext, bounds: Rect) {
         Color::from_hex(0x080A0F),
         14.0,
         1.0,
-        theme.colors.border,
+        theme.border_color(),
     );
     ctx.draw_text("Stroke + clip", &text, bounds.x + 16.0, bounds.y + 10.0);
 
@@ -1588,7 +1540,7 @@ fn stroke_and_clip_scene(ctx: &mut PaintContext, bounds: Rect) {
         Color::from_hex(0x0E131B),
         10.0,
         1.0,
-        theme.colors.border,
+        theme.border_color(),
     );
 
     ctx.push_clip(clip);
@@ -1596,7 +1548,7 @@ fn stroke_and_clip_scene(ctx: &mut PaintContext, bounds: Rect) {
     for index in 0..12 {
         let x = index as f32 * 32.0 - 24.0;
         let color = if index % 2 == 0 {
-            theme.colors.primary.with_alpha(0.9)
+            theme.primary_color().with_alpha(0.9)
         } else {
             Color::WHITE.with_alpha(0.78)
         };
@@ -1630,7 +1582,7 @@ fn text_rendering_scene(ctx: &mut PaintContext, bounds: Rect) {
         swatch_width,
         swatch_height,
     );
-    let label = scene_label_style(11.0, theme.colors.text_muted);
+    let label = scene_label_style(11.0, theme.muted_text_color());
     let sentence = "Text stays crisp.";
 
     ctx.fill_bordered_rect(
@@ -1638,7 +1590,7 @@ fn text_rendering_scene(ctx: &mut PaintContext, bounds: Rect) {
         Color::from_hex(0x080A0F),
         14.0,
         1.0,
-        theme.colors.border,
+        theme.border_color(),
     );
     ctx.draw_text("Text rendering", &label, bounds.x + 16.0, bounds.y + 10.0);
     ctx.fill_bordered_rect(
@@ -1646,7 +1598,7 @@ fn text_rendering_scene(ctx: &mut PaintContext, bounds: Rect) {
         Color::from_hex(0x10141A),
         12.0,
         1.0,
-        theme.colors.border,
+        theme.border_color(),
     );
     ctx.fill_bordered_rect(
         light,

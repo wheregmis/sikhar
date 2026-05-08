@@ -69,11 +69,12 @@ fn switch_label(mode: ThemeMode) -> &'static str {
     }
 }
 
-fn apply_todo_brand(mut theme: Theme) -> Theme {
-    theme.colors.primary = Color::from_hex(0x2563EB);
-    theme.colors.primary_hovered = Color::from_hex(0x1D4ED8);
-    theme.colors.primary_pressed = Color::from_hex(0x1E40AF);
-    theme
+fn apply_todo_brand(theme: Theme) -> Theme {
+    theme.brand_states(
+        Color::from_hex(0x2563EB),
+        Color::from_hex(0x1D4ED8),
+        Color::from_hex(0x1E40AF),
+    )
 }
 
 fn todo_light_theme() -> Theme {
@@ -227,8 +228,8 @@ fn secondary_button(label: &str, on_click: impl FnMut() + 'static) -> Button {
     let theme = current_theme();
     Button::builder()
         .label(label)
-        .background(theme.colors.surface_variant)
-        .text_color(theme.colors.text_primary)
+        .background(theme.surface_variant_color())
+        .text_color(theme.text_color())
         .on_click(on_click)
         .build()
 }
@@ -237,14 +238,14 @@ fn filter_button(label: &str, model: Signal<TodoModel>, filter: Filter, current:
     let theme = current_theme();
     let selected = current == filter;
     let background = if selected {
-        theme.colors.primary
+        theme.primary_color()
     } else {
-        theme.colors.surface_variant
+        theme.surface_variant_color()
     };
     let text_color = if selected {
         Color::WHITE
     } else {
-        theme.colors.text_primary
+        theme.text_color()
     };
     Button::builder()
         .label(label)
@@ -293,14 +294,14 @@ fn footer_actions(model: Signal<TodoModel>, navigator: Navigator) -> Container {
 fn todo_row(model: Signal<TodoModel>, todo: TodoItem) -> Container {
     let theme = current_theme();
     let text_color = if todo.done {
-        theme.colors.text_muted
+        theme.muted_text_color()
     } else {
-        theme.colors.text_primary
+        theme.text_color()
     };
     let row_bg = if todo.done {
-        theme.colors.surface_done
+        theme.surface_done_color()
     } else {
-        theme.colors.surface_variant
+        theme.surface_variant_color()
     };
 
     let id = todo.id;
@@ -331,7 +332,7 @@ fn todo_row(model: Signal<TodoModel>, todo: TodoItem) -> Container {
         .child(
             Button::builder()
                 .label("Delete")
-                .background(theme.colors.error)
+                .background(theme.error_color())
                 .text_color(Color::WHITE)
                 .on_click(move || {
                     apply_action(model, TodoAction::Delete(id));
@@ -367,7 +368,7 @@ fn input_row(model: Signal<TodoModel>, draft: String, analysis: TaskHook) -> Con
         .child(
             Button::builder()
                 .label("Add")
-                .background(theme.colors.primary)
+                .background(theme.primary_color())
                 .text_color(Color::WHITE)
                 .on_click(move || {
                     apply_action(model_for_add, TodoAction::AddDraft);
@@ -397,14 +398,14 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
     let active_count = snapshot.todos.iter().filter(|todo| !todo.done).count();
     let done_count = snapshot.todos.iter().filter(|todo| todo.done).count();
 
-    let shell_bg = theme.colors.background;
-    let panel_bg = theme.colors.surface;
-    let card_bg = theme.colors.surface_variant;
-    let subdued_text = theme.colors.text_muted;
+    let shell_bg = theme.background_color();
+    let panel_bg = theme.surface_color();
+    let card_bg = theme.surface_variant_color();
+    let subdued_text = theme.muted_text_color();
     let analysis_color = if is_dark {
-        theme.colors.border_focus
+        theme.focus_color()
     } else {
-        theme.colors.primary_hovered
+        theme.primary_hovered_color()
     };
     let visible: Vec<TodoItem> = snapshot.filtered_todos().cloned().collect();
 
@@ -449,7 +450,7 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
                         .content(page_title)
                         .font_size(28.0)
                         .bold(true)
-                        .color(theme.colors.text_primary)
+                        .color(theme.text_color())
                         .build(),
                 )
                 .child(toggle_theme_button(theme_mode)),
@@ -511,26 +512,26 @@ fn todo_about(cx: &mut ComponentContext<'_>) -> Container {
     Container::column()
         .fill()
         .padding(32.0)
-        .background(theme.colors.background)
+        .background(theme.background_color())
         .child(
             Container::column()
                 .gap(16.0)
                 .padding(24.0)
-                .background(theme.colors.surface)
+                .background(theme.surface_color())
                 .corner_radius(16.0)
                 .child(
                     Text::builder()
                         .content(page_title)
                         .font_size(28.0)
                         .bold(true)
-                        .color(theme.colors.text_primary)
+                        .color(theme.text_color())
                         .build(),
                 )
                 .child(
                     Text::builder()
                         .content(page_subtitle)
                         .font_size(16.0)
-                        .color(theme.colors.text_muted)
+                        .color(theme.muted_text_color())
                         .build(),
                 )
                 .child(
@@ -539,7 +540,7 @@ fn todo_about(cx: &mut ComponentContext<'_>) -> Container {
                             "Use the About button in the task footer or switch between `#/` and `#/about` in the browser to verify routing parity.",
                         )
                         .font_size(14.0)
-                        .color(theme.colors.primary)
+                        .color(theme.primary_color())
                         .build(),
                 )
                 .child(back_to_todo_button(navigator)),

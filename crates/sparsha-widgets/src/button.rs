@@ -115,15 +115,15 @@ impl Button {
         let controls = responsive_theme_controls(&theme);
         let typography = responsive_typography(&theme);
         ButtonStyle {
-            background: theme.colors.primary,
-            background_hovered: theme.colors.primary_hovered,
-            background_pressed: theme.colors.primary_pressed,
-            background_disabled: theme.colors.disabled,
-            text_color: Color::WHITE,
-            text_color_disabled: theme.colors.text_muted,
+            background: theme.primary_color(),
+            background_hovered: theme.primary_hovered_color(),
+            background_pressed: theme.primary_pressed_color(),
+            background_disabled: theme.disabled_color(),
+            text_color: theme.text_on_primary_color(),
+            text_color_disabled: theme.muted_text_color(),
             border_color: Color::TRANSPARENT,
             border_width: 0.0,
-            corner_radius: theme.radii.md,
+            corner_radius: theme.radius_md(),
             padding_h: controls.control_padding_x,
             padding_v: controls.control_padding_y,
             font_size: typography.button_size,
@@ -154,7 +154,7 @@ impl Button {
             style.min_width = estimated_text_width + style.padding_h * 2.0;
         }
         if style.min_height <= 0.0 {
-            style.min_height = current_theme().controls.control_height;
+            style.min_height = current_theme().control_height();
         }
 
         style
@@ -260,20 +260,21 @@ impl Widget for Button {
 
         // Focus ring (scale offset for HiDPI)
         if ctx.has_focus() && !self.disabled {
-            let controls = current_theme().controls;
+            let theme = current_theme();
+            let controls = responsive_theme_controls(&theme);
             let focus_bounds = focus_ring_bounds(bounds, scale, &controls);
             ctx.fill_bordered_rect(
                 focus_bounds,
                 Color::TRANSPARENT,
                 style.corner_radius + 2.0,
                 focus_ring_border_width(scale, &controls),
-                focus_ring_color(current_theme().colors.border_focus),
+                focus_ring_color(theme.focus_color()),
             );
         }
 
         // Draw the button label text, centered
         let text_style = TextStyle::default()
-            .with_family(current_theme().typography.font_family)
+            .with_family(current_theme().font_family_name())
             .with_size(style.font_size)
             .with_color(text_color);
         ctx.draw_text_centered(&self.label, &text_style, bounds);
@@ -326,7 +327,7 @@ impl Widget for Button {
     fn measure(&self, ctx: &mut crate::LayoutContext) -> Option<(f32, f32)> {
         let resolved = self.resolved_style();
         let style = TextStyle::default()
-            .with_family(current_theme().typography.font_family)
+            .with_family(current_theme().font_family_name())
             .with_size(resolved.font_size);
         let (w, h) = ctx.text.measure(&self.label, &style, None);
         Some((w + resolved.padding_h * 2.0, h + resolved.padding_v * 2.0))
@@ -514,22 +515,21 @@ mod tests {
 
     #[test]
     fn button_defaults_follow_theme() {
-        let mut theme = Theme::default();
-        theme.colors.primary = Color::from_hex(0x10B981);
-        theme.typography.button_size = 18.0;
+        let theme = Theme::default()
+            .brand(Color::from_hex(0x10B981))
+            .type_scale(16.0, 12.0, 24.0, 18.0);
         set_current_viewport(ViewportInfo::default());
         set_current_theme(theme.clone());
 
         let button = Button::builder().label("Theme").build();
         let style = button.resolved_style();
-        assert_eq!(style.background, theme.colors.primary);
+        assert_eq!(style.background, theme.primary_color());
         assert_eq!(style.font_size, 18.0);
     }
 
     #[test]
     fn button_explicit_background_wins_over_theme() {
-        let mut theme = Theme::default();
-        theme.colors.primary = Color::from_hex(0x3B82F6);
+        let theme = Theme::default().brand(Color::from_hex(0x3B82F6));
         set_current_viewport(ViewportInfo::default());
         set_current_theme(theme);
 
@@ -543,10 +543,10 @@ mod tests {
 
     #[test]
     fn button_defaults_scale_down_for_mobile_viewport() {
-        let mut theme = Theme::default();
-        theme.typography.button_size = 14.0;
-        theme.controls.control_height = 38.0;
-        theme.controls.control_padding_x = 12.0;
+        let theme = Theme::default()
+            .type_scale(16.0, 12.0, 24.0, 14.0)
+            .control_size(38.0)
+            .control_padding(12.0, 8.0);
         set_current_theme(theme);
         set_current_viewport(ViewportInfo::new(390.0, 844.0));
 

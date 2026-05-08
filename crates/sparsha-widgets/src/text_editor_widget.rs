@@ -72,14 +72,14 @@ pub(crate) fn themed_editor_style(multiline: bool) -> TextInputStyle {
     let typography = responsive_typography(&theme);
 
     TextInputStyle {
-        background: theme.colors.input_background,
-        background_focused: theme.colors.surface,
-        text_color: theme.colors.text_primary,
-        placeholder_color: theme.colors.input_placeholder,
-        border_color: theme.colors.border,
-        border_color_focused: theme.colors.primary,
+        background: theme.input_background_color(),
+        background_focused: theme.surface_color(),
+        text_color: theme.text_color(),
+        placeholder_color: theme.input_placeholder_color(),
+        border_color: theme.border_color(),
+        border_color_focused: theme.primary_color(),
         border_width: 1.0,
-        corner_radius: theme.radii.md,
+        corner_radius: theme.radius_md(),
         padding_h: controls.control_padding_x,
         padding_v: controls.control_padding_y,
         font_size: typography.body_size,
@@ -126,14 +126,14 @@ pub(crate) fn editor_widget_style(style: &TextInputStyle, fill_width: bool) -> S
 
 pub(crate) fn editor_text_style(style: &TextInputStyle) -> TextStyle {
     TextStyle::default()
-        .with_family(current_theme().typography.font_family.clone())
+        .with_family(current_theme().font_family_name())
         .with_size(style.font_size)
         .with_color(style.text_color)
 }
 
 pub(crate) fn editor_placeholder_style(style: &TextInputStyle) -> TextStyle {
     TextStyle::default()
-        .with_family(current_theme().typography.font_family.clone())
+        .with_family(current_theme().font_family_name())
         .with_size(style.font_size)
         .with_color(style.placeholder_color)
 }
@@ -166,14 +166,15 @@ pub(crate) fn paint_editor_frame(
     );
 
     if focused {
-        let controls = current_theme().controls;
+        let theme = current_theme();
+        let controls = responsive_theme_controls(&theme);
         let focus_bounds = focus_ring_bounds(bounds, scale, &controls);
         ctx.fill_bordered_rect(
             focus_bounds,
             Color::TRANSPARENT,
             style.corner_radius + 2.0,
             focus_ring_border_width(scale, &controls),
-            focus_ring_color(current_theme().colors.border_focus),
+            focus_ring_color(theme.focus_color()),
         );
     }
 }

@@ -223,6 +223,61 @@ fn leaf_widgets_do_not_reintroduce_legacy_public_constructors() {
 }
 
 #[test]
+fn stable_facade_keeps_raw_theme_tokens_out_of_primary_surface() {
+    let audited_files = [
+        "README.md",
+        "docs/api-surface.md",
+        "examples/README.md",
+        "examples/counter/src/main.rs",
+        "examples/showcase/src/main.rs",
+        "examples/todo/src/main.rs",
+        "crates/sparsha/src/lib.rs",
+    ];
+    let removed_theme_types = [
+        "ThemeColors",
+        "ThemeTypography",
+        "ThemeSpacing",
+        "ThemeRadii",
+        "ThemeControls",
+        "ButtonStyle",
+        "CheckboxStyle",
+        "TextInputStyle",
+        "TextAreaStyle",
+        "ScrollbarStyle",
+    ];
+
+    for path in audited_files {
+        let contents = read_repo_file(path);
+        for removed in removed_theme_types {
+            assert!(
+                !contents.contains(removed),
+                "{path} still exposes {removed} in the primary authoring surface",
+            );
+        }
+        assert!(
+            !contents.contains(".colors."),
+            "{path} still reaches into raw theme colors",
+        );
+        assert!(
+            !contents.contains(".typography."),
+            "{path} still reaches into raw theme typography",
+        );
+        assert!(
+            !contents.contains(".spacing."),
+            "{path} still reaches into raw theme spacing",
+        );
+        assert!(
+            !contents.contains(".radii."),
+            "{path} still reaches into raw theme radii",
+        );
+        assert!(
+            !contents.contains(".controls."),
+            "{path} still reaches into raw theme controls",
+        );
+    }
+}
+
+#[test]
 fn shipped_surface_documents_the_bon_authoring_paths() {
     let readme = read_repo_file("README.md");
     let api_surface = read_repo_file("docs/api-surface.md");
@@ -235,6 +290,9 @@ fn shipped_surface_documents_the_bon_authoring_paths() {
     assert!(readme.contains("component().render(...).call()"));
     assert!(readme.contains("App::builder()"));
     assert!(readme.contains("Router::builder()"));
+    assert!(readme.contains("Theme::light()"));
+    assert!(readme.contains(".brand(Color::from_hex"));
+    assert!(readme.contains(".control_padding("));
     assert!(api_surface.contains("Container::column()"));
     assert!(api_surface.contains("Container::row()"));
     assert!(api_surface.contains("Container::main_axis_alignment(...)"));
@@ -255,6 +313,8 @@ fn shipped_surface_documents_the_bon_authoring_paths() {
     assert!(api_surface.contains("TextWrap"));
     assert!(api_surface.contains("wrap(TextWrap::Word)"));
     assert!(api_surface.contains("TextOverflow::Ellipsis"));
+    assert!(api_surface.contains("fluent `Theme` methods"));
+    assert!(api_surface.contains("raw token buckets"));
     assert!(todo.contains("component().render("));
     assert!(todo.contains("App::builder()"));
     assert!(showcase.contains("Router::builder()"));

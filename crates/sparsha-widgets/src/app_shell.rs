@@ -2,9 +2,9 @@
 
 use crate::{
     control_state::{focus_ring_border_width, focus_ring_bounds, focus_ring_color, ControlState},
-    current_theme, responsive_typography, AccessibilityAction, AccessibilityInfo,
-    AccessibilityRole, Align, ButtonState, ButtonStyle, EventContext, IntoWidget, Padding,
-    PaintContext, Positioned, Widget,
+    current_theme, responsive_theme_controls, responsive_typography, AccessibilityAction,
+    AccessibilityInfo, AccessibilityRole, Align, ButtonState, ButtonStyle, EventContext,
+    IntoWidget, Padding, PaintContext, Positioned, Widget,
 };
 use bon::bon;
 use sparsha_core::Color;
@@ -64,7 +64,7 @@ impl AppBar {
 
     fn resolved_background(&self) -> Color {
         self.background
-            .unwrap_or_else(|| current_theme().colors.primary)
+            .unwrap_or_else(|| current_theme().primary_color())
     }
 
     fn resolved_foreground(&self) -> Color {
@@ -98,7 +98,7 @@ impl Widget for AppBar {
         let foreground = self.resolved_foreground();
         let typography = responsive_typography(&theme);
         let text_style = TextStyle::default()
-            .with_family(theme.typography.font_family.clone())
+            .with_family(theme.font_family_name())
             .with_size(typography.title_size)
             .with_color(foreground);
 
@@ -206,12 +206,12 @@ impl FloatingActionButton {
         let theme = current_theme();
         let typography = responsive_typography(&theme);
         ButtonStyle {
-            background: theme.colors.primary,
-            background_hovered: theme.colors.primary_hovered,
-            background_pressed: theme.colors.primary_pressed,
-            background_disabled: theme.colors.disabled,
-            text_color: Color::WHITE,
-            text_color_disabled: theme.colors.text_muted,
+            background: theme.primary_color(),
+            background_hovered: theme.primary_hovered_color(),
+            background_pressed: theme.primary_pressed_color(),
+            background_disabled: theme.disabled_color(),
+            text_color: theme.text_on_primary_color(),
+            text_color_disabled: theme.muted_text_color(),
             border_color: Color::TRANSPARENT,
             border_width: 0.0,
             corner_radius: 28.0,
@@ -339,19 +339,20 @@ impl Widget for FloatingActionButton {
         }
 
         if ctx.has_focus() && !self.disabled {
-            let controls = current_theme().controls;
+            let theme = current_theme();
+            let controls = responsive_theme_controls(&theme);
             let focus_bounds = focus_ring_bounds(bounds, scale, &controls);
             ctx.fill_bordered_rect(
                 focus_bounds,
                 Color::TRANSPARENT,
                 style.corner_radius + 2.0,
                 focus_ring_border_width(scale, &controls),
-                focus_ring_color(current_theme().colors.border_focus),
+                focus_ring_color(theme.focus_color()),
             );
         }
 
         let text_style = TextStyle::default()
-            .with_family(current_theme().typography.font_family.clone())
+            .with_family(current_theme().font_family_name())
             .with_size(style.font_size)
             .with_color(text_color);
         ctx.draw_text_centered(&self.label, &text_style, bounds);
@@ -558,7 +559,7 @@ impl Widget for Scaffold {
         ctx.fill_rect(
             ctx.bounds(),
             self.background
-                .unwrap_or_else(|| current_theme().colors.background),
+                .unwrap_or_else(|| current_theme().background_color()),
         );
     }
 

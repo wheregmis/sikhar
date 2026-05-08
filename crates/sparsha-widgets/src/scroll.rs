@@ -228,11 +228,11 @@ impl Scroll {
             let theme = current_theme();
             let controls = responsive_theme_controls(&theme);
             ScrollbarStyle {
-                track_color: theme.colors.surface_variant,
-                thumb_color: theme.colors.border,
-                thumb_hover_color: theme.colors.primary_hovered,
+                track_color: theme.surface_variant_color(),
+                thumb_color: theme.border_color(),
+                thumb_hover_color: theme.primary_hovered_color(),
                 width: controls.scrollbar_thickness,
-                corner_radius: theme.radii.md,
+                corner_radius: theme.radius_md(),
             }
         })
     }

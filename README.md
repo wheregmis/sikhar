@@ -39,7 +39,7 @@ Notable current behavior:
 
 - `Scroll` supports vertical, horizontal, and both-axis scrolling with interactive scrollbars
 - `List` supports both simple owned-children mode and fixed-extent virtualization for large data sets
-- Default widget sizing and focus-ring behavior are aligned through shared theme control tokens
+- Default widget sizing and focus-ring behavior are aligned through the shared `Theme`
 - Semantic layout helpers cover common structure without dropping to raw flex settings: `Center`, `Padding`, `Expanded`, `Stack`, `Positioned`, `Align`, `SizedBox`, and `Spacer`
 - Paragraph text layout stays on the `Text` builder surface through `line_height(...)`, `fill_width(...)`, `wrap(TextWrap::Word)`, `max_lines(...)`, and overflow policies such as `TextOverflow::Clip` and `TextOverflow::Ellipsis`
 - Normal app screens can be authored as bon-backed function components via `component().render(...).call()` and `ComponentContext`
@@ -112,6 +112,25 @@ fn main() -> Result<(), sparsha::AppRunError> {
 }
 ```
 
+## Theming
+
+Use the fluent `Theme` surface for app-level branding and sizing. Raw color,
+typography, spacing, radius, and control token buckets are implementation
+details.
+
+```rust
+let theme = Theme::light()
+    .brand(Color::from_hex(0x2196F3))
+    .background(Color::from_hex(0xFAFAFA))
+    .surface(Color::WHITE)
+    .text(Color::from_hex(0x212121))
+    .muted_text(Color::from_hex(0x757575))
+    .type_scale(16.0, 14.0, 20.0, 16.0)
+    .radius(4.0, 6.0, 28.0)
+    .control_size(40.0)
+    .control_padding(16.0, 10.0);
+```
+
 ## Crates
 
 | Crate | Role |
@@ -123,7 +142,7 @@ fn main() -> Result<(), sparsha::AppRunError> {
 | `sparsha-text` | Font loading, shaping, glyph atlas management |
 | `sparsha-input` | Input events, focus management, hit testing |
 | `sparsha-signals` | Reactive signal runtime |
-| `sparsha-widgets` | Built-in widgets, theme types, paint/build contexts |
+| `sparsha-widgets` | Built-in widgets, theme facade, paint/build contexts |
 
 ## Examples
 

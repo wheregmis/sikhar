@@ -16,10 +16,10 @@ Stable for 1.0:
     - function components can read provider-scoped subtree values through `ComponentContext::use_context::<T>() -> Option<T>`, `use_context_or(...)`, and `use_context_or_else(...)`
     - built-in framework resources remain on dedicated component accessors such as `viewport()`, `navigator()`, and `task_runtime()`
     - responsive text roles stay on the builder surface through `Text::builder().variant(TextVariant::Header)` rather than shortcut constructors, and paragraph behavior stays on the same path via `line_height(...)`, `fill_width(...)`, `wrap(TextWrap::Word)`, `max_lines(...)`, and overflow policies such as `TextOverflow::Clip` and `TextOverflow::Ellipsis`
-  - specialized lane: dedicated primitives such as `ForEach`, `DrawSurface`, animation helpers, and theme/style value types
+  - specialized lane: dedicated primitives such as `ForEach`, `DrawSurface`, animation helpers, and expert-only style value types
   - expert lane: low-level `Widget` and context APIs for manual custom widgets
 - component authoring helpers: `component`, `Component`, `ComponentContext`, `TaskHook`
-- theme and accessibility configuration types re-exported from `sparsha-widgets`
+- theme and accessibility configuration types re-exported from `sparsha-widgets`; normal theme customization uses fluent `Theme` methods such as `brand(...)`, `background(...)`, `surface(...)`, `text(...)`, `type_scale(...)`, `radius(...)`, `control_size(...)`, and `control_padding(...)`
 - task runtime types: `TaskRuntime`, `TaskRuntimeInitError`, `TaskHandle`, `TaskResult`, `TaskStatus`, `TaskKey`, `TaskId`, `TaskPayload`, `TaskPolicy`, `Generation`
   - supported built-in task kinds in 1.0: `echo`, `sleep_echo`, `analyze_text`
   - custom task registration is not part of the 1.0 contract
@@ -145,7 +145,8 @@ Stable for 1.0:
 - editing/accessibility widgets: `TextArea`, `Semantics`
 - accessibility metadata types: `AccessibilityInfo`, `AccessibilityRole`, `AccessibilityAction`
 - `IntoWidget`
-- widget/theme/context types re-exported from the crate root, including `MainAxisAlignment`, `CrossAxisAlignment`, `Alignment`, `TextWrap`, and `TextOverflow`
+- widget/context types re-exported from the crate root, including `MainAxisAlignment`, `CrossAxisAlignment`, `Alignment`, `TextWrap`, and `TextOverflow`
+- `Theme`, with fluent customization methods; raw token buckets such as color, typography, spacing, radius, and control structs are implementation details rather than the 1.0 authoring surface
 - `styles`, `taffy`, and `WidgetId` convenience re-exports
 
 Internal/provisional:

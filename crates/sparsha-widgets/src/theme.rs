@@ -6,11 +6,11 @@ use std::cell::RefCell;
 /// Top-level theme object.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct Theme {
-    pub colors: ThemeColors,
-    pub typography: ThemeTypography,
-    pub spacing: ThemeSpacing,
-    pub radii: ThemeRadii,
-    pub controls: ThemeControls,
+    pub(crate) colors: ThemeColors,
+    pub(crate) typography: ThemeTypography,
+    pub(crate) spacing: ThemeSpacing,
+    pub(crate) radii: ThemeRadii,
+    pub(crate) controls: ThemeControls,
 }
 
 impl Theme {
@@ -38,6 +38,7 @@ impl Theme {
                 disabled: Color::from_hex(0x64748B),
                 input_background: Color::from_hex(0x1E293B),
                 input_placeholder: Color::from_hex(0x64748B),
+                text_on_primary: Color::WHITE,
             },
             typography: ThemeTypography::default(),
             spacing: ThemeSpacing::default(),
@@ -45,9 +46,305 @@ impl Theme {
             controls: ThemeControls::default(),
         }
     }
+
+    pub fn brand(mut self, color: Color) -> Self {
+        self.colors.primary = color;
+        self.colors.primary_hovered = adjust_color(color, 0.88);
+        self.colors.primary_pressed = adjust_color(color, 0.76);
+        self.colors.border_focus = adjust_color(color, 1.25);
+        self.colors.text_on_primary = readable_text_on(color);
+        self
+    }
+
+    pub fn brand_states(mut self, primary: Color, hovered: Color, pressed: Color) -> Self {
+        self.colors.primary = primary;
+        self.colors.primary_hovered = hovered;
+        self.colors.primary_pressed = pressed;
+        self.colors.border_focus = adjust_color(primary, 1.25);
+        self.colors.text_on_primary = readable_text_on(primary);
+        self
+    }
+
+    pub fn background(mut self, color: Color) -> Self {
+        self.colors.background = color;
+        self
+    }
+
+    pub fn surface(mut self, color: Color) -> Self {
+        self.colors.surface = color;
+        self.colors.input_background = color;
+        self
+    }
+
+    pub fn surface_variant(mut self, color: Color) -> Self {
+        self.colors.surface_variant = color;
+        self
+    }
+
+    pub fn surface_done(mut self, color: Color) -> Self {
+        self.colors.surface_done = color;
+        self
+    }
+
+    pub fn text(mut self, color: Color) -> Self {
+        self.colors.text_primary = color;
+        self
+    }
+
+    pub fn muted_text(mut self, color: Color) -> Self {
+        self.colors.text_muted = color;
+        self.colors.input_placeholder = color;
+        self
+    }
+
+    pub fn border(mut self, color: Color) -> Self {
+        self.colors.border = color;
+        self
+    }
+
+    pub fn focus(mut self, color: Color) -> Self {
+        self.colors.border_focus = color;
+        self
+    }
+
+    pub fn error(mut self, color: Color) -> Self {
+        self.colors.error = color;
+        self.colors.error_hovered = adjust_color(color, 0.88);
+        self.colors.error_pressed = adjust_color(color, 0.76);
+        self
+    }
+
+    pub fn error_states(mut self, base: Color, hovered: Color, pressed: Color) -> Self {
+        self.colors.error = base;
+        self.colors.error_hovered = hovered;
+        self.colors.error_pressed = pressed;
+        self
+    }
+
+    pub fn disabled(mut self, color: Color) -> Self {
+        self.colors.disabled = color;
+        self
+    }
+
+    pub fn input_background(mut self, color: Color) -> Self {
+        self.colors.input_background = color;
+        self
+    }
+
+    pub fn input_placeholder(mut self, color: Color) -> Self {
+        self.colors.input_placeholder = color;
+        self
+    }
+
+    pub fn font_family(mut self, family: impl Into<String>) -> Self {
+        self.typography.font_family = family.into();
+        self
+    }
+
+    pub fn type_scale(mut self, body: f32, small: f32, title: f32, button: f32) -> Self {
+        self.typography.body_size = body;
+        self.typography.small_size = small;
+        self.typography.title_size = title;
+        self.typography.button_size = button;
+        self
+    }
+
+    pub fn line_height(mut self, line_height: f32) -> Self {
+        self.typography.line_height = line_height;
+        self
+    }
+
+    pub fn spacing(mut self, xs: f32, sm: f32, md: f32, lg: f32, xl: f32) -> Self {
+        self.spacing = ThemeSpacing { xs, sm, md, lg, xl };
+        self
+    }
+
+    pub fn radius(mut self, sm: f32, md: f32, lg: f32) -> Self {
+        self.radii = ThemeRadii { sm, md, lg };
+        self
+    }
+
+    pub fn control_size(mut self, height: f32) -> Self {
+        self.controls.control_height = height;
+        self
+    }
+
+    pub fn control_padding(mut self, x: f32, y: f32) -> Self {
+        self.controls.control_padding_x = x;
+        self.controls.control_padding_y = y;
+        self
+    }
+
+    pub fn checkbox_size(mut self, size: f32) -> Self {
+        self.controls.checkbox_size = size;
+        self
+    }
+
+    pub fn scrollbar_thickness(mut self, thickness: f32) -> Self {
+        self.controls.scrollbar_thickness = thickness;
+        self
+    }
+
+    pub fn focus_ring_width(mut self, width: f32) -> Self {
+        self.controls.focus_ring_width = width;
+        self
+    }
+
+    pub fn background_color(&self) -> Color {
+        self.colors.background
+    }
+
+    pub fn surface_color(&self) -> Color {
+        self.colors.surface
+    }
+
+    pub fn surface_variant_color(&self) -> Color {
+        self.colors.surface_variant
+    }
+
+    pub fn surface_done_color(&self) -> Color {
+        self.colors.surface_done
+    }
+
+    pub fn text_color(&self) -> Color {
+        self.colors.text_primary
+    }
+
+    pub fn muted_text_color(&self) -> Color {
+        self.colors.text_muted
+    }
+
+    pub fn primary_color(&self) -> Color {
+        self.colors.primary
+    }
+
+    pub fn primary_hovered_color(&self) -> Color {
+        self.colors.primary_hovered
+    }
+
+    pub fn primary_pressed_color(&self) -> Color {
+        self.colors.primary_pressed
+    }
+
+    pub fn text_on_primary_color(&self) -> Color {
+        self.colors.text_on_primary
+    }
+
+    pub fn error_color(&self) -> Color {
+        self.colors.error
+    }
+
+    pub fn error_hovered_color(&self) -> Color {
+        self.colors.error_hovered
+    }
+
+    pub fn error_pressed_color(&self) -> Color {
+        self.colors.error_pressed
+    }
+
+    pub fn border_color(&self) -> Color {
+        self.colors.border
+    }
+
+    pub fn focus_color(&self) -> Color {
+        self.colors.border_focus
+    }
+
+    pub fn disabled_color(&self) -> Color {
+        self.colors.disabled
+    }
+
+    pub fn input_background_color(&self) -> Color {
+        self.colors.input_background
+    }
+
+    pub fn input_placeholder_color(&self) -> Color {
+        self.colors.input_placeholder
+    }
+
+    pub fn font_family_name(&self) -> &str {
+        &self.typography.font_family
+    }
+
+    pub fn body_size(&self) -> f32 {
+        self.typography.body_size
+    }
+
+    pub fn small_size(&self) -> f32 {
+        self.typography.small_size
+    }
+
+    pub fn title_size(&self) -> f32 {
+        self.typography.title_size
+    }
+
+    pub fn button_size(&self) -> f32 {
+        self.typography.button_size
+    }
+
+    pub fn line_height_value(&self) -> f32 {
+        self.typography.line_height
+    }
+
+    pub fn spacing_xs(&self) -> f32 {
+        self.spacing.xs
+    }
+
+    pub fn spacing_sm(&self) -> f32 {
+        self.spacing.sm
+    }
+
+    pub fn spacing_md(&self) -> f32 {
+        self.spacing.md
+    }
+
+    pub fn spacing_lg(&self) -> f32 {
+        self.spacing.lg
+    }
+
+    pub fn spacing_xl(&self) -> f32 {
+        self.spacing.xl
+    }
+
+    pub fn radius_sm(&self) -> f32 {
+        self.radii.sm
+    }
+
+    pub fn radius_md(&self) -> f32 {
+        self.radii.md
+    }
+
+    pub fn radius_lg(&self) -> f32 {
+        self.radii.lg
+    }
+
+    pub fn control_height(&self) -> f32 {
+        self.controls.control_height
+    }
+
+    pub fn control_padding_x(&self) -> f32 {
+        self.controls.control_padding_x
+    }
+
+    pub fn control_padding_y(&self) -> f32 {
+        self.controls.control_padding_y
+    }
+
+    pub fn focus_ring_width_value(&self) -> f32 {
+        self.controls.focus_ring_width
+    }
+
+    pub fn checkbox_size_value(&self) -> f32 {
+        self.controls.checkbox_size
+    }
+
+    pub fn scrollbar_thickness_value(&self) -> f32 {
+        self.controls.scrollbar_thickness
+    }
 }
 
 /// Color tokens used by core widgets.
+#[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThemeColors {
     pub background: Color,
@@ -67,6 +364,7 @@ pub struct ThemeColors {
     pub disabled: Color,
     pub input_background: Color,
     pub input_placeholder: Color,
+    pub text_on_primary: Color,
 }
 
 impl Default for ThemeColors {
@@ -89,11 +387,13 @@ impl Default for ThemeColors {
             disabled: Color::from_hex(0x9CA3AF),
             input_background: Color::WHITE,
             input_placeholder: Color::from_hex(0x9CA3AF),
+            text_on_primary: Color::WHITE,
         }
     }
 }
 
 /// Typography tokens used by core widgets.
+#[doc(hidden)]
 #[derive(Clone, Debug, PartialEq)]
 pub struct ThemeTypography {
     pub font_family: String,
@@ -118,6 +418,7 @@ impl Default for ThemeTypography {
 }
 
 /// Spacing tokens used by core widgets.
+#[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThemeSpacing {
     pub xs: f32,
@@ -140,6 +441,7 @@ impl Default for ThemeSpacing {
 }
 
 /// Radius tokens used by core widgets.
+#[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThemeRadii {
     pub sm: f32,
@@ -158,6 +460,7 @@ impl Default for ThemeRadii {
 }
 
 /// Shared control metrics used by the built-in widgets.
+#[doc(hidden)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThemeControls {
     pub control_height: f32,
@@ -195,4 +498,22 @@ pub fn set_current_theme(theme: Theme) {
 /// Read the current app theme.
 pub fn current_theme() -> Theme {
     CURRENT_THEME.with(|slot| slot.borrow().clone())
+}
+
+fn adjust_color(color: Color, factor: f32) -> Color {
+    Color::rgba(
+        (color.r * factor).clamp(0.0, 1.0),
+        (color.g * factor).clamp(0.0, 1.0),
+        (color.b * factor).clamp(0.0, 1.0),
+        color.a,
+    )
+}
+
+fn readable_text_on(color: Color) -> Color {
+    let luminance = 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
+    if luminance > 0.45 {
+        Color::BLACK
+    } else {
+        Color::WHITE
+    }
 }

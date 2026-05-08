@@ -32,8 +32,12 @@ mod widget;
 pub use accessibility::{AccessibilityAction, AccessibilityInfo, AccessibilityRole};
 pub use animation::{lerp_color, AnimationEasing, ImplicitAnimation, Tween};
 pub use app_shell::{AppBar, FloatingActionButton, Scaffold};
-pub use button::{Button, ButtonState, ButtonStyle};
-pub use checkbox::{Checkbox, CheckboxStyle};
+#[doc(hidden)]
+pub use button::ButtonStyle;
+pub use button::{Button, ButtonState};
+pub use checkbox::Checkbox;
+#[doc(hidden)]
+pub use checkbox::CheckboxStyle;
 pub use container::{Container, CrossAxisAlignment, MainAxisAlignment};
 pub use context::{
     BuildContext, EventCommands, EventContext, LayoutContext, PaintCommands, PaintContext,
@@ -46,17 +50,22 @@ pub use layout_helpers::{
 };
 pub use list::{List, ListDirection};
 pub use provider::Provider;
-pub use scroll::{Scroll, ScrollDirection, ScrollbarStyle};
+#[doc(hidden)]
+pub use scroll::ScrollbarStyle;
+pub use scroll::{Scroll, ScrollDirection};
 pub use semantics::Semantics;
 pub use sparsha_text::TextWrap;
 pub use text::{Text, TextAlign, TextOverflow, TextVariant};
-pub use text_area::{TextArea, TextAreaStyle};
+pub use text_area::TextArea;
+#[doc(hidden)]
+pub use text_area::TextAreaStyle;
 pub use text_editor::TextEditorState;
-pub use text_input::{TextInput, TextInputStyle};
-pub use theme::{
-    current_theme, set_current_theme, Theme, ThemeColors, ThemeControls, ThemeRadii, ThemeSpacing,
-    ThemeTypography,
-};
+pub use text_input::TextInput;
+#[doc(hidden)]
+pub use text_input::TextInputStyle;
+pub use theme::{current_theme, set_current_theme, Theme};
+#[doc(hidden)]
+pub use theme::{ThemeColors, ThemeControls, ThemeRadii, ThemeSpacing, ThemeTypography};
 #[doc(hidden)]
 pub use viewport::set_current_viewport;
 pub use viewport::{current_viewport, ViewportClass, ViewportInfo, ViewportOrientation};

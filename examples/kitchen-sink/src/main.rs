@@ -43,8 +43,8 @@ fn build_sidebar() -> Container {
         .padding(24.0)
         .width(250.0)
         .fill_height()
-        .background(theme.colors.surface)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_color())
+        .border(1.0, theme.border_color())
         .child(
             Text::builder()
                 .content("Kitchen Sink")
@@ -143,7 +143,7 @@ fn build_input_section() -> Container {
                         "Use Tab and Shift+Tab to move through the checkbox, single-line fields, and multiline editor. Native and web now share copy, cut, paste, undo, redo, word movement, and IME composition behavior.",
                     )
                     .font_size(13.0)
-                    .color(theme.colors.text_muted)
+                    .color(theme.muted_text_color())
                     .build(),
             )
             .child(
@@ -189,8 +189,8 @@ fn build_container_section() -> Container {
     Container::column()
         .gap(16.0)
         .padding(24.0)
-        .background(theme.colors.surface)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_color())
+        .border(1.0, theme.border_color())
         .corner_radius(12.0)
         .child(
             Text::builder()
@@ -202,17 +202,17 @@ fn build_container_section() -> Container {
         .child(
             Container::column()
                 .padding(16.0)
-                .background(theme.colors.primary.with_alpha(0.18))
+                .background(theme.primary_color().with_alpha(0.18))
                 .corner_radius(8.0)
                 .child(
                     Container::column()
                         .padding(16.0)
-                        .background(theme.colors.surface_variant.with_alpha(0.9))
+                        .background(theme.surface_variant_color().with_alpha(0.9))
                         .corner_radius(8.0)
                         .child(
                             Container::column()
                                 .padding(16.0)
-                                .background(theme.colors.primary_hovered.with_alpha(0.35))
+                                .background(theme.primary_hovered_color().with_alpha(0.35))
                                 .corner_radius(8.0)
                                 .child(
                                     Text::builder()
@@ -236,12 +236,12 @@ fn build_scroll_section() -> Container {
                 .padding(12.0)
                 .min_size(0.0, 40.0)
                 .background(if i % 2 == 0 {
-                    theme.colors.surface_variant
+                    theme.surface_variant_color()
                 } else {
-                    theme.colors.surface
+                    theme.surface_color()
                 })
                 .corner_radius(4.0)
-                .border(1.0, theme.colors.border)
+                .border(1.0, theme.border_color())
                 .child(
                     Text::builder()
                         .content(format!("Item {}", i + 1))
@@ -262,7 +262,7 @@ fn build_scroll_section() -> Container {
                         "The left demo is a regular two-axis scroll container. The right demo is a fixed-row virtualized list that only realizes the visible range.",
                     )
                     .font_size(13.0)
-                    .color(theme.colors.text_muted)
+                    .color(theme.muted_text_color())
                     .build(),
             )
             .child(
@@ -280,8 +280,8 @@ fn build_scroll_section() -> Container {
                                         Container::column()
                                             .size(720.0, 420.0)
                                             .padding(16.0)
-                                            .background(theme.colors.surface)
-                                            .border(1.0, theme.colors.border)
+                                            .background(theme.surface_color())
+                                            .border(1.0, theme.border_color())
                                             .child(scroll_content),
                                     )
                                     .fill(),
@@ -307,11 +307,11 @@ fn build_scroll_section() -> Container {
                                                     .min_size(0.0, 44.0)
                                                     .padding(12.0)
                                                     .background(if index % 2 == 0 {
-                                                        theme.colors.surface
+                                                        theme.surface_color()
                                                     } else {
-                                                        theme.colors.surface_variant
+                                                        theme.surface_variant_color()
                                                     })
-                                                    .border(1.0, theme.colors.border)
+                                                    .border(1.0, theme.border_color())
                                                     .corner_radius(8.0)
                                                     .child(
                                                         Text::builder()
@@ -349,7 +349,7 @@ fn build_animation_section() -> Container {
                      Page transitions: router cross-fade overlay between routes.",
                     )
                     .font_size(13.0)
-                    .color(current_theme().colors.text_muted)
+                    .color(current_theme().muted_text_color())
                     .build(),
             )
             .child(
@@ -367,20 +367,20 @@ fn build_animation_section() -> Container {
                         bg,
                         14.0,
                         1.0,
-                        current_theme().colors.border.with_alpha(0.9),
+                        current_theme().border_color().with_alpha(0.9),
                     );
 
                     let wave_width = bounds.width * 0.28;
                     let x = bounds.x + (bounds.width - wave_width) * t;
                     ctx.fill_rect(
                         Rect::new(x, bounds.y + 8.0, wave_width, bounds.height - 16.0),
-                        current_theme().colors.primary.with_alpha(0.22),
+                        current_theme().primary_color().with_alpha(0.22),
                     );
 
                     let style = TextStyle::new()
                         .with_family("Inter")
                         .with_size(14.0)
-                        .with_color(current_theme().colors.text_primary)
+                        .with_color(current_theme().text_color())
                         .bold();
                     ctx.draw_text(
                         "Explicit animation: DrawSurface timeline",
@@ -400,8 +400,8 @@ fn section(title: &str, content: impl Widget + 'static) -> Container {
     Container::column()
         .gap(16.0)
         .padding(24.0)
-        .background(theme.colors.surface)
-        .border(1.0, theme.colors.border)
+        .background(theme.surface_color())
+        .border(1.0, theme.border_color())
         .corner_radius(16.0)
         .child(
             Text::builder()

@@ -75,9 +75,8 @@ pub use sparsha_widgets::{
     AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, Center, CrossAxisAlignment,
     Expanded, FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget, MainAxisAlignment,
     Padding, Positioned, Provider, Scaffold, Semantics, SizedBox, Spacer, Stack, TextArea,
-    TextAreaStyle, TextEditorState, TextInput, TextInputStyle, TextOverflow, TextWrap, Theme,
-    ThemeColors, ThemeControls, ThemeRadii, ThemeSpacing, ThemeTypography, Tween, ViewportClass,
-    ViewportInfo, ViewportOrientation, WidgetChildMode,
+    TextEditorState, TextInput, TextOverflow, TextWrap, Theme, Tween, ViewportClass, ViewportInfo,
+    ViewportOrientation, WidgetChildMode,
 };
 pub use tasks::{
     Generation, TaskHandle, TaskId, TaskKey, TaskPayload, TaskPolicy, TaskResult,
@@ -103,14 +102,13 @@ pub mod prelude {
     pub use sparsha_signals::{Effect, Memo, ReadSignal, Signal, WriteSignal};
     pub use sparsha_widgets::{
         current_theme, current_viewport, lerp_color, AccessibilityAction, AccessibilityInfo,
-        AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, BuildContext, Button,
-        ButtonStyle, Center, Checkbox, CheckboxStyle, Container, CrossAxisAlignment, DrawSurface,
-        EventCommands, Expanded, FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget,
-        List, ListDirection, MainAxisAlignment, Padding, Positioned, Provider, Scaffold, Scroll,
-        ScrollDirection, Semantics, SizedBox, Spacer, Stack, Text, TextAlign, TextArea,
-        TextAreaStyle, TextEditorState, TextInput, TextInputStyle, TextOverflow, TextVariant,
-        TextWrap, Theme, ThemeColors, ThemeControls, ThemeRadii, ThemeSpacing, ThemeTypography,
-        Tween, ViewportClass, ViewportInfo, ViewportOrientation, Widget, WidgetChildMode,
+        AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, BuildContext, Button, Center,
+        Checkbox, Container, CrossAxisAlignment, DrawSurface, EventCommands, Expanded,
+        FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget, List, ListDirection,
+        MainAxisAlignment, Padding, Positioned, Provider, Scaffold, Scroll, ScrollDirection,
+        Semantics, SizedBox, Spacer, Stack, Text, TextAlign, TextArea, TextEditorState, TextInput,
+        TextOverflow, TextVariant, TextWrap, Theme, Tween, ViewportClass, ViewportInfo,
+        ViewportOrientation, Widget, WidgetChildMode,
     };
 }
 

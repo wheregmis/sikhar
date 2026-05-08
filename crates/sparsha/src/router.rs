@@ -632,7 +632,7 @@ impl Widget for RouterHost {
         let overlay_alpha =
             page_transition_overlay_alpha(progress, transition.config.overlay_alpha_peak);
         if overlay_alpha > 0.0 {
-            let overlay = current_theme().colors.background.with_alpha(overlay_alpha);
+            let overlay = current_theme().background_color().with_alpha(overlay_alpha);
             ctx.fill_rect(ctx.bounds(), overlay);
         }
 

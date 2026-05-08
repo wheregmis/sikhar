@@ -104,17 +104,17 @@ impl Checkbox {
         let controls = responsive_theme_controls(&theme);
         CheckboxStyle {
             size: controls.checkbox_size,
-            corner_radius: theme.radii.sm,
+            corner_radius: theme.radius_sm(),
             border_width: 1.0,
-            background: theme.colors.surface,
-            background_hovered: theme.colors.background,
-            background_checked: theme.colors.primary,
-            background_disabled: theme.colors.disabled,
-            border_color: theme.colors.border,
-            border_color_checked: theme.colors.primary_hovered,
-            border_color_disabled: theme.colors.border,
-            mark_color: Color::WHITE,
-            focus_color: theme.colors.border_focus,
+            background: theme.surface_color(),
+            background_hovered: theme.background_color(),
+            background_checked: theme.primary_color(),
+            background_disabled: theme.disabled_color(),
+            border_color: theme.border_color(),
+            border_color_checked: theme.primary_hovered_color(),
+            border_color_disabled: theme.border_color(),
+            mark_color: theme.text_on_primary_color(),
+            focus_color: theme.focus_color(),
         }
     }
 
@@ -239,7 +239,7 @@ impl Widget for Checkbox {
         if self.checked {
             let theme = current_theme();
             let mark_style = sparsha_text::TextStyle::new()
-                .with_family(theme.typography.font_family.clone())
+                .with_family(theme.font_family_name())
                 .with_size(style.size * 0.9)
                 .with_color(style.mark_color)
                 .bold();
@@ -253,7 +253,7 @@ impl Widget for Checkbox {
         }
 
         if ctx.has_focus() && !self.disabled {
-            let controls = current_theme().controls;
+            let controls = responsive_theme_controls(&current_theme());
             let focus_bounds = focus_ring_bounds(bounds, scale, &controls);
             ctx.fill_bordered_rect(
                 focus_bounds,
@@ -410,8 +410,7 @@ mod tests {
 
     #[test]
     fn themed_defaults_scale_down_for_mobile_viewport() {
-        let mut theme = Theme::default();
-        theme.controls.checkbox_size = 18.0;
+        let theme = Theme::default().checkbox_size(18.0);
         set_current_theme(theme);
         set_current_viewport(ViewportInfo::new(390.0, 844.0));
 

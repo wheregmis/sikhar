@@ -87,11 +87,11 @@ impl Text {
             TextVariant::Caption => typography.small_size,
         });
         let resolved_color = self.color.unwrap_or(match self.variant {
-            TextVariant::Caption => theme.colors.text_muted,
-            _ => theme.colors.text_primary,
+            TextVariant::Caption => theme.muted_text_color(),
+            _ => theme.text_color(),
         });
         let mut style = TextStyle::default()
-            .with_family(theme.typography.font_family.clone())
+            .with_family(theme.font_family_name())
             .with_size(resolved_size)
             .with_color(resolved_color);
 
@@ -334,22 +334,21 @@ mod tests {
 
     #[test]
     fn text_defaults_follow_current_theme() {
-        let mut theme = Theme::default();
-        theme.typography.body_size = 19.0;
-        theme.colors.text_primary = Color::from_hex(0x334155);
+        let theme = Theme::default()
+            .type_scale(19.0, 12.0, 24.0, 14.0)
+            .text(Color::from_hex(0x334155));
         set_current_viewport(ViewportInfo::default());
         set_current_theme(theme.clone());
 
         let text = Text::builder().content("Theme text").build();
         let style = text.text_style();
         assert_eq!(style.font_size, 19.0);
-        assert_eq!(style.color, theme.colors.text_primary);
+        assert_eq!(style.color, theme.text_color());
     }
 
     #[test]
     fn explicit_overrides_beat_theme_defaults() {
-        let mut theme = Theme::default();
-        theme.typography.body_size = 21.0;
+        let theme = Theme::default().type_scale(21.0, 12.0, 24.0, 14.0);
         set_current_viewport(ViewportInfo::default());
         set_current_theme(theme);
 
@@ -367,9 +366,7 @@ mod tests {
 
     #[test]
     fn header_and_caption_follow_responsive_typography() {
-        let mut theme = Theme::default();
-        theme.typography.title_size = 24.0;
-        theme.typography.small_size = 12.0;
+        let theme = Theme::default().type_scale(16.0, 12.0, 24.0, 14.0);
         set_current_theme(theme.clone());
         set_current_viewport(ViewportInfo::new(390.0, 844.0));
 
@@ -383,7 +380,7 @@ mod tests {
             .build();
         assert!(header.text_style().font_size < 24.0);
         assert!(caption.text_style().font_size <= 12.0);
-        assert_eq!(caption.text_style().color, theme.colors.text_muted);
+        assert_eq!(caption.text_style().color, theme.muted_text_color());
         assert!(header.bold);
     }
 

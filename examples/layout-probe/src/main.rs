@@ -47,7 +47,7 @@ fn layout_probe_app(cx: &mut ComponentContext<'_>) -> LayoutGuide {
             .fill()
             .main_axis_alignment(MainAxisAlignment::Center)
             .cross_axis_alignment(CrossAxisAlignment::Center)
-            .background(theme.colors.background)
+            .background(theme.background_color())
             .child(
                 Container::column()
                     .size(PROBE_CARD_WIDTH, PROBE_CARD_HEIGHT)
@@ -55,29 +55,29 @@ fn layout_probe_app(cx: &mut ComponentContext<'_>) -> LayoutGuide {
                     .gap(16.0)
                     .main_axis_alignment(MainAxisAlignment::Center)
                     .cross_axis_alignment(CrossAxisAlignment::Center)
-                    .background(theme.colors.surface)
+                    .background(theme.surface_color())
                     .corner_radius(22.0)
-                    .border(2.0, theme.colors.primary)
+                    .border(2.0, theme.primary_color())
                     .child(
                         Text::builder()
                             .content("Centered Probe")
                             .font_size(30.0)
                             .bold(true)
-                            .color(theme.colors.text_primary)
+                            .color(theme.text_color())
                             .build(),
                     )
                     .child(
                         Text::builder()
                             .content(viewport_label)
                             .font_size(14.0)
-                            .color(theme.colors.text_muted)
+                            .color(theme.muted_text_color())
                             .build(),
                     )
                     .child(
                         Text::builder()
                             .content("The blue card should sit exactly on the crosshair.")
                             .font_size(15.0)
-                            .color(theme.colors.text_primary)
+                            .color(theme.text_color())
                             .align(TextAlign::Center)
                             .build(),
                     ),

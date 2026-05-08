@@ -99,24 +99,24 @@ pub(crate) fn classify_viewport_width(width: f32) -> ViewportClass {
 pub(crate) fn responsive_typography(theme: &Theme) -> ResponsiveTypography {
     let class = current_viewport().class;
     let body_size = match class {
-        ViewportClass::Desktop => theme.typography.body_size,
-        ViewportClass::Tablet => (theme.typography.body_size - 1.0).max(13.0),
-        ViewportClass::Mobile => (theme.typography.body_size - 2.0).max(13.0),
+        ViewportClass::Desktop => theme.body_size(),
+        ViewportClass::Tablet => (theme.body_size() - 1.0).max(13.0),
+        ViewportClass::Mobile => (theme.body_size() - 2.0).max(13.0),
     };
     let small_size = match class {
-        ViewportClass::Desktop => theme.typography.small_size,
-        ViewportClass::Tablet => (theme.typography.small_size - 1.0).max(11.0),
-        ViewportClass::Mobile => (theme.typography.small_size - 1.0).max(10.0),
+        ViewportClass::Desktop => theme.small_size(),
+        ViewportClass::Tablet => (theme.small_size() - 1.0).max(11.0),
+        ViewportClass::Mobile => (theme.small_size() - 1.0).max(10.0),
     };
     let title_size = match class {
-        ViewportClass::Desktop => theme.typography.title_size,
-        ViewportClass::Tablet => (theme.typography.title_size - 2.0).max(22.0),
-        ViewportClass::Mobile => (theme.typography.title_size - 4.0).max(20.0),
+        ViewportClass::Desktop => theme.title_size(),
+        ViewportClass::Tablet => (theme.title_size() - 2.0).max(22.0),
+        ViewportClass::Mobile => (theme.title_size() - 4.0).max(20.0),
     };
     let button_size = match class {
-        ViewportClass::Desktop => theme.typography.button_size,
-        ViewportClass::Tablet => (theme.typography.button_size - 1.0).max(13.0),
-        ViewportClass::Mobile => (theme.typography.button_size - 2.0).max(12.0),
+        ViewportClass::Desktop => theme.button_size(),
+        ViewportClass::Tablet => (theme.button_size() - 1.0).max(13.0),
+        ViewportClass::Mobile => (theme.button_size() - 2.0).max(12.0),
     };
     let subheader_size = (title_size - 6.0).max(body_size + 2.0);
 

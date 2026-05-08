@@ -865,10 +865,10 @@ mod tests {
 
     #[test]
     fn themed_defaults_scale_down_for_mobile_viewport() {
-        let mut theme = Theme::default();
-        theme.typography.body_size = 16.0;
-        theme.controls.control_height = 38.0;
-        theme.controls.control_padding_x = 12.0;
+        let theme = Theme::default()
+            .type_scale(16.0, 12.0, 24.0, 14.0)
+            .control_size(38.0)
+            .control_padding(12.0, 8.0);
         set_current_theme(theme);
         set_current_viewport(ViewportInfo::new(390.0, 844.0));
 

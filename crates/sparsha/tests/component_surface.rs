@@ -43,11 +43,22 @@ fn bon_component_surface_builds_from_the_public_crate_root() {
 fn bon_app_and_router_builders_compile_from_the_public_crate_root() {
     let runtime = sparsha::signals::RuntimeHandle::new();
     runtime.run_with_current(|| {
+        let theme = Theme::light()
+            .brand(Color::from_hex(0x2196F3))
+            .background(Color::from_hex(0xFAFAFA))
+            .surface(Color::WHITE)
+            .text(Color::from_hex(0x212121))
+            .muted_text(Color::from_hex(0x757575))
+            .type_scale(16.0, 14.0, 20.0, 16.0)
+            .radius(4.0, 6.0, 28.0)
+            .control_size(40.0)
+            .control_padding(16.0, 10.0);
+
         let _app = App::builder()
             .title("Surface Test")
             .width(960)
             .height(640)
-            .theme(Theme::light())
+            .theme(theme)
             .router(
                 Router::builder()
                     .routes(vec![Route::new("/", || {

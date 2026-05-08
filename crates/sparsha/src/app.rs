@@ -217,7 +217,7 @@ impl AppTheme {
     }
 
     pub(crate) fn resolve_background(&self, background_override: Option<Color>) -> Color {
-        background_override.unwrap_or_else(|| self.resolve_theme().colors.background)
+        background_override.unwrap_or_else(|| self.resolve_theme().background_color())
     }
 }
 
@@ -1360,10 +1360,8 @@ mod tests {
 
     #[test]
     fn app_theme_mode_resolves_light_or_dark() {
-        let mut light = Theme::light();
-        light.colors.primary = Color::from_hex(0x22C55E);
-        let mut dark = Theme::dark();
-        dark.colors.primary = Color::from_hex(0xF59E0B);
+        let light = Theme::light().brand(Color::from_hex(0x22C55E));
+        let dark = Theme::dark().brand(Color::from_hex(0xF59E0B));
 
         let light_active = AppTheme {
             light: ThemeSource::Static(light.clone()),
@@ -1382,8 +1380,7 @@ mod tests {
 
     #[test]
     fn app_theme_dark_mode_falls_back_to_light_when_missing_dark_theme() {
-        let mut light = Theme::light();
-        light.colors.primary = Color::from_hex(0x6366F1);
+        let light = Theme::light().brand(Color::from_hex(0x6366F1));
 
         let app_theme = AppTheme {
             light: ThemeSource::Static(light.clone()),
@@ -1395,8 +1392,7 @@ mod tests {
 
     #[test]
     fn app_theme_background_uses_theme_unless_override_is_set() {
-        let mut light = Theme::light();
-        light.colors.background = Color::from_hex(0x111827);
+        let light = Theme::light().background(Color::from_hex(0x111827));
         let app_theme = AppTheme {
             light: ThemeSource::Static(light),
             dark: None,
@@ -1459,8 +1455,7 @@ mod tests {
                 let _ = source.resolve();
             });
 
-            let mut updated = Theme::default();
-            updated.typography.body_size = 20.0;
+            let updated = Theme::default().type_scale(20.0, 12.0, 24.0, 14.0);
             theme_signal.set(updated);
 
             let dirty = runtime.take_dirty_flags();
