@@ -52,7 +52,7 @@ Notable current behavior:
 - Default web path: retained DOM rendering driven by the same widget tree as native
 - Hybrid path: `DrawSurface` embeds GPU-heavy scenes into an otherwise DOM-backed UI
 - Runtime model: DOM rendering stays responsive while background work uses a worker-backed task runtime
-- Repo-owned web workflow: root build/serve/smoke scripts wrap the checked-in example `index.html`, `Trunk.toml`, and `sparsha-worker.js` assets
+- Dioxus CLI is the web development path, including Subsecond hotpatching; example `Dioxus.toml` files own static assets through their `public_dir`
 - Browser wasm tests are checked in as `./scripts/wasm-browser-tests.sh` for the `sparsha` crate's `wasm_bindgen_test` entrypoints
 
 ## Task Runtime
@@ -164,18 +164,18 @@ cargo run -p showcase
 cargo run -p todo
 ```
 
-Run the counter example with native Subsecond hotpatching through the Dioxus CLI:
+Run the counter example with Subsecond hotpatching through the Dioxus CLI:
 
 ```bash
 dx serve --hotpatch --platform desktop --package counter --features hotpatch
+dx serve --hotpatch --platform web --package counter --features hotpatch
 ```
 
-Build and serve a web example from the repo root:
+Serve the counter example on web through Dioxus:
 
 ```bash
 rustup target add wasm32-unknown-unknown
-./scripts/web-build-example.sh kitchen-sink
-./scripts/web-serve-dist.sh kitchen-sink 4173
+dx serve --platform web --package counter --features hotpatch
 ```
 
 Run the browser smoke suite:
@@ -198,7 +198,7 @@ Run the full local release-readiness suite:
 ./scripts/release-readiness.sh
 ```
 
-Direct per-example `trunk serve` still works for local iteration, but the root scripts are the canonical checked-in build and verification path. More detail lives in [examples/README.md](examples/README.md).
+The counter example no longer carries a Trunk path; its web assets are served through Dioxus CLI. More detail lives in [examples/README.md](examples/README.md).
 
 ## Context
 
@@ -237,7 +237,7 @@ Canonical verification entrypoints:
 - `cargo test --workspace`
 - `cargo check -p counter -p layout-probe -p kitchen-sink -p fractal-clock -p hybrid-overlay -p showcase -p todo --target wasm32-unknown-unknown`
 
-`web-smoke.sh` builds and serves `examples/showcase`, `examples/todo`, `examples/kitchen-sink`, `examples/hybrid-overlay`, `examples/counter`, and `examples/layout-probe`, then runs the matching Playwright smoke suite against those pages.
+`web-smoke.sh` builds and serves the non-counter static web examples, then runs the matching Playwright smoke suite against those pages. The counter web path is covered through `dx serve --platform web --package counter`.
 
 `wasm-browser-tests.sh` runs the checked-in `wasm_bindgen_test` browser entrypoints for `sparsha`.
 

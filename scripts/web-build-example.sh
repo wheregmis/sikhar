@@ -17,6 +17,12 @@ if [[ ! -d "$EXAMPLE_DIR" ]]; then
   exit 1
 fi
 
+if [[ "$EXAMPLE" == "counter" ]]; then
+  echo "counter web now uses Dioxus CLI:" >&2
+  echo "  dx serve --hotpatch --platform web --package counter --features hotpatch" >&2
+  exit 1
+fi
+
 TRUNK_ARGS=(build)
 if [[ "$MODE" != "debug" ]]; then
   TRUNK_ARGS+=(--release)

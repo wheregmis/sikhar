@@ -1,5 +1,9 @@
 [application]
 name = "counter"
+public_dir = "public"
+
+[web.resource.dev]
+script = ["/dioxus-hotpatch-wasm-bindgen-shim.js"]
 
 [bundle]
 identifier = "dev.sparsha.counter"

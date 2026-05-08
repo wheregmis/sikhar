@@ -80,6 +80,7 @@ web-sys = { version = "0.3.91", features = [
     "Element",
     "Event",
     "ErrorEvent",
+    "WebSocket",
     "CustomEvent",
     "Node",
     "HtmlElement",

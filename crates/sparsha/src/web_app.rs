@@ -112,6 +112,7 @@ pub(crate) fn run_dom_app(
         config,
         theme,
         platform,
+        router: router.clone(),
         router_navigator: navigator,
         dom_renderer,
         text_system: TextSystem::new_headless(),
@@ -139,6 +140,7 @@ pub(crate) fn run_dom_app(
         ime_composing: false,
         pending_surface_retry: false,
         last_route_path: initial_route_path,
+        hotpatch_signal: crate::hotpatch::HotpatchSignal::default(),
     };
     state.update_viewport();
 
@@ -156,6 +158,15 @@ pub(crate) fn run_dom_app(
     }
     install_event_listeners(&window, &state, &pending_animation_frame, &frame_cb);
     start_animation_loop(&window, &state, &pending_animation_frame, &frame_cb);
+    {
+        let hotpatch_signal = state.borrow().hotpatch_signal.clone();
+        let window_for_hotpatch = window.clone();
+        let frame_cb = Rc::clone(&frame_cb);
+        let pending_animation_frame = Rc::clone(&pending_animation_frame);
+        hotpatch_signal.register(move || {
+            schedule_animation_frame(&window_for_hotpatch, &pending_animation_frame, &frame_cb);
+        });
+    }
     Ok(())
 }
 
@@ -163,6 +174,7 @@ struct WebAppState {
     config: AppConfig,
     theme: AppTheme,
     platform: WebPlatform,
+    router: Router,
     router_navigator: Navigator,
     dom_renderer: DomRenderer,
     text_system: TextSystem,
@@ -190,6 +202,7 @@ struct WebAppState {
     ime_composing: bool,
     pending_surface_retry: bool,
     last_route_path: String,
+    hotpatch_signal: crate::hotpatch::HotpatchSignal,
 }
 
 fn paint_widget_subtree(
@@ -425,6 +438,30 @@ impl WebAppState {
         }
     }
 
+    fn apply_hotpatch_if_pending(&mut self) -> bool {
+        if !self.hotpatch_signal.take_pending() {
+            return false;
+        }
+
+        let router = self.router.clone();
+        self.root_widget = self
+            .signal_runtime
+            .run_with_current(|| Box::new(RouterHost::new(router)) as Box<dyn Widget>);
+        self.layout_tree = LayoutTree::new();
+        self.widget_registry = WidgetRuntimeRegistry::default();
+        self.component_states = ComponentStateStore::default();
+        self.focus_manager = FocusManager::new();
+        self.focused_path = None;
+        self.capture_path = None;
+        self.draw_list.clear();
+        self.surface_frames.clear();
+        self.ime_composing = false;
+        self.pending_surface_retry = false;
+        self.needs_layout = true;
+        self.needs_repaint = true;
+        true
+    }
+
     fn shortcut_profile(&self) -> sparsha_input::ShortcutProfile {
         self.platform.shortcut_profile()
     }
@@ -487,6 +524,7 @@ impl WebAppState {
     }
 
     fn frame(&mut self) {
+        self.apply_hotpatch_if_pending();
         let current_route_path = self.router_navigator.current_path();
         let desired_hash = path_to_hash(&current_route_path);
         let route_changed = current_route_path != self.last_route_path;

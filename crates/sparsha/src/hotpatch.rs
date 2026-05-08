@@ -1,28 +1,54 @@
-#[cfg(not(target_arch = "wasm32"))]
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+use std::cell::RefCell;
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+use {
+    wasm_bindgen::{closure::Closure, JsCast},
+    web_sys::{Event, MessageEvent, WebSocket},
+};
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+thread_local! {
+    static WEB_CONNECTION: RefCell<Option<WebHotpatchConnection>> = const { RefCell::new(None) };
+}
+
+#[cfg(all(
+    feature = "hotpatch",
+    any(
+        target_arch = "wasm32",
+        target_os = "macos",
+        target_os = "windows",
+        target_os = "linux"
+    )
+))]
+use dioxus_devtools_types::DevserverMsg;
+
 #[cfg(all(
     feature = "hotpatch",
     any(target_os = "macos", target_os = "windows", target_os = "linux")
 ))]
-use {
-    dioxus_devtools_types::DevserverMsg,
-    std::{
-        io::{Read, Write},
-        net::TcpStream,
-        sync::Once,
-        thread,
-        time::{Duration, Instant},
-    },
+use std::{
+    io::{Read, Write},
+    net::TcpStream,
+    sync::Once,
+    thread,
+    time::{Duration, Instant},
 };
 
 pub(crate) fn call<O>(f: impl FnMut() -> O) -> O {
     #[cfg(all(
         feature = "hotpatch",
-        any(target_os = "macos", target_os = "windows", target_os = "linux")
+        any(
+            target_arch = "wasm32",
+            target_os = "macos",
+            target_os = "windows",
+            target_os = "linux"
+        )
     ))]
     {
         subsecond::call(f)
@@ -30,11 +56,65 @@ pub(crate) fn call<O>(f: impl FnMut() -> O) -> O {
 
     #[cfg(not(all(
         feature = "hotpatch",
-        any(target_os = "macos", target_os = "windows", target_os = "linux")
+        any(
+            target_arch = "wasm32",
+            target_os = "macos",
+            target_os = "windows",
+            target_os = "linux"
+        )
     )))]
     {
         let mut f = f;
         f()
+    }
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+const HOTPATCH_APPLIED_EVENT: &str = "SparshaHotpatchApplied";
+
+#[cfg(target_arch = "wasm32")]
+#[derive(Clone, Default)]
+pub(crate) struct HotpatchSignal {
+    pending: Arc<AtomicBool>,
+}
+
+#[cfg(target_arch = "wasm32")]
+impl HotpatchSignal {
+    pub(crate) fn register(&self, wake: impl Fn() + 'static) {
+        #[cfg(feature = "hotpatch")]
+        {
+            if let Some(window) = web_sys::window() {
+                let on_hotpatch = Closure::wrap(Box::new(move |_event: Event| {
+                    wake();
+                }) as Box<dyn FnMut(Event)>);
+                let _ = window.add_event_listener_with_callback(
+                    HOTPATCH_APPLIED_EVENT,
+                    on_hotpatch.as_ref().unchecked_ref(),
+                );
+                on_hotpatch.forget();
+            }
+
+            let pending = Arc::clone(&self.pending);
+            subsecond::register_handler(Arc::new(move || {
+                pending.store(true, Ordering::SeqCst);
+                dispatch_hotpatch_applied_event();
+            }));
+            connect_once();
+        }
+
+        #[cfg(not(feature = "hotpatch"))]
+        {
+            let _ = wake;
+        }
+    }
+
+    pub(crate) fn take_pending(&self) -> bool {
+        self.pending.swap(false, Ordering::SeqCst)
+    }
+
+    #[cfg(test)]
+    fn mark_pending_for_test(&self) {
+        self.pending.store(true, Ordering::SeqCst);
     }
 }
 
@@ -98,15 +178,26 @@ fn should_connect_to_devserver(cli_enabled: bool, endpoint: Option<&str>) -> Opt
     test,
     all(
         feature = "hotpatch",
-        any(target_os = "macos", target_os = "windows", target_os = "linux")
+        any(
+            target_arch = "wasm32",
+            target_os = "macos",
+            target_os = "windows",
+            target_os = "linux"
+        )
     )
 ))]
 fn hotreload_matches_target(
     for_pid: Option<u32>,
     for_build_id: Option<u64>,
     build_id: u64,
+    target_pid: Option<u32>,
 ) -> bool {
-    let pid_matches = for_pid.is_none_or(|pid| pid == std::process::id());
+    let pid_matches = match (for_pid, target_pid) {
+        (None, _) => true,
+        (Some(pid), Some(target_pid)) => pid == target_pid,
+        (Some(0), None) => true,
+        (Some(_), None) => false,
+    };
     let build_matches = for_build_id.is_none_or(|id| build_id == 0 || id == build_id);
     pid_matches && build_matches
 }
@@ -206,13 +297,133 @@ fn run_connection(endpoint: &str) -> Result<(), String> {
     any(target_os = "macos", target_os = "windows", target_os = "linux")
 ))]
 fn hotpatch_request_url(endpoint: &str) -> String {
-    let separator = if endpoint.contains('?') { '&' } else { '?' };
-    format!(
-        "{endpoint}{separator}aslr_reference={}&build_id={}&pid={}",
+    append_hotpatch_query(
+        endpoint,
         subsecond::aslr_reference(),
         dioxus_cli_config::build_id(),
-        std::process::id()
+        std::process::id(),
     )
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+fn hotpatch_request_url(endpoint: &str) -> String {
+    append_hotpatch_query(
+        endpoint,
+        subsecond::aslr_reference(),
+        dioxus_cli_config::build_id(),
+        0,
+    )
+}
+
+#[cfg(any(
+    test,
+    all(
+        feature = "hotpatch",
+        any(
+            target_arch = "wasm32",
+            target_os = "macos",
+            target_os = "windows",
+            target_os = "linux"
+        )
+    )
+))]
+fn append_hotpatch_query(endpoint: &str, aslr_reference: usize, build_id: u64, pid: u32) -> String {
+    let separator = if endpoint.contains('?') { '&' } else { '?' };
+    format!("{endpoint}{separator}aslr_reference={aslr_reference}&build_id={build_id}&pid={pid}")
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+struct WebHotpatchConnection {
+    _socket: WebSocket,
+    _on_message: Closure<dyn FnMut(MessageEvent)>,
+    _on_error: Closure<dyn FnMut(Event)>,
+    _on_close: Closure<dyn FnMut(Event)>,
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+fn connect_once() {
+    WEB_CONNECTION.with(|connection| {
+        if connection.borrow().is_some() {
+            return;
+        }
+
+        let Some(endpoint) = web_devserver_ws_endpoint() else {
+            return;
+        };
+        let request_url = hotpatch_request_url(&endpoint);
+        let socket = match WebSocket::new(&request_url) {
+            Ok(socket) => socket,
+            Err(err) => {
+                log::warn!(
+                    "failed to open Dioxus devserver hotpatch websocket: {:?}",
+                    err
+                );
+                return;
+            }
+        };
+
+        let on_message = Closure::wrap(Box::new(move |event: MessageEvent| {
+            if let Some(text) = event.data().as_string() {
+                handle_text_message(&text);
+            }
+        }) as Box<dyn FnMut(MessageEvent)>);
+        socket.set_onmessage(Some(on_message.as_ref().unchecked_ref()));
+
+        let on_error = Closure::wrap(Box::new(move |event: Event| {
+            log::warn!(
+                "Dioxus devserver hotpatch websocket error: {:?}",
+                event.type_()
+            );
+        }) as Box<dyn FnMut(Event)>);
+        socket.set_onerror(Some(on_error.as_ref().unchecked_ref()));
+
+        let on_close = Closure::wrap(Box::new(move |event: Event| {
+            log::warn!(
+                "Dioxus devserver hotpatch websocket closed: {:?}",
+                event.type_()
+            );
+        }) as Box<dyn FnMut(Event)>);
+        socket.set_onclose(Some(on_close.as_ref().unchecked_ref()));
+
+        *connection.borrow_mut() = Some(WebHotpatchConnection {
+            _socket: socket,
+            _on_message: on_message,
+            _on_error: on_error,
+            _on_close: on_close,
+        });
+    });
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+fn web_devserver_ws_endpoint() -> Option<String> {
+    if let Some(endpoint) = dioxus_cli_config::devserver_ws_endpoint() {
+        return Some(endpoint);
+    }
+
+    let location = web_sys::window()?.location();
+    let protocol = location.protocol().ok()?;
+    let host = location.host().ok()?;
+    web_devserver_endpoint_from_location(&protocol, &host)
+}
+
+#[cfg(any(test, all(feature = "hotpatch", target_arch = "wasm32")))]
+fn web_devserver_endpoint_from_location(protocol: &str, host: &str) -> Option<String> {
+    if host.is_empty() {
+        return None;
+    }
+    let scheme = if protocol == "https:" { "wss" } else { "ws" };
+    Some(format!("{scheme}://{host}/_dioxus"))
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+fn dispatch_hotpatch_applied_event() {
+    let Some(window) = web_sys::window() else {
+        return;
+    };
+    let Ok(event) = Event::new(HOTPATCH_APPLIED_EVENT) else {
+        return;
+    };
+    let _ = window.dispatch_event(&event);
 }
 
 #[cfg(all(
@@ -316,7 +527,38 @@ fn handle_text_message(text: &str) {
     let DevserverMsg::HotReload(msg) = msg else {
         return;
     };
-    if !hotreload_matches_target(msg.for_pid, msg.for_build_id, dioxus_cli_config::build_id()) {
+    if !hotreload_matches_target(
+        msg.for_pid,
+        msg.for_build_id,
+        dioxus_cli_config::build_id(),
+        Some(std::process::id()),
+    ) {
+        return;
+    }
+    let Some(jump_table) = msg.jump_table else {
+        return;
+    };
+
+    if let Err(err) = unsafe { subsecond::apply_patch(jump_table) } {
+        log::warn!("failed to apply Subsecond hotpatch: {err}");
+    }
+}
+
+#[cfg(all(feature = "hotpatch", target_arch = "wasm32"))]
+fn handle_text_message(text: &str) {
+    let Ok(msg) = serde_json::from_str::<DevserverMsg>(text) else {
+        return;
+    };
+
+    let DevserverMsg::HotReload(msg) = msg else {
+        return;
+    };
+    if !hotreload_matches_target(
+        msg.for_pid,
+        msg.for_build_id,
+        dioxus_cli_config::build_id(),
+        None,
+    ) {
         return;
     }
     let Some(jump_table) = msg.jump_table else {
@@ -618,16 +860,54 @@ mod tests {
     #[test]
     fn hotreload_target_filter_accepts_absent_or_matching_pid() {
         let this_pid = std::process::id();
-        assert!(hotreload_matches_target(None, None, 0));
-        assert!(hotreload_matches_target(Some(this_pid), None, 0));
+        assert!(hotreload_matches_target(None, None, 0, Some(this_pid)));
+        assert!(hotreload_matches_target(
+            Some(this_pid),
+            None,
+            0,
+            Some(this_pid)
+        ));
         assert!(!hotreload_matches_target(
             Some(this_pid.wrapping_add(1)),
             None,
-            0
+            0,
+            Some(this_pid)
         ));
-        assert!(hotreload_matches_target(None, Some(7), 0));
-        assert!(hotreload_matches_target(None, Some(7), 7));
-        assert!(!hotreload_matches_target(None, Some(7), 8));
+        assert!(hotreload_matches_target(None, Some(7), 0, Some(this_pid)));
+        assert!(hotreload_matches_target(None, Some(7), 7, Some(this_pid)));
+        assert!(!hotreload_matches_target(None, Some(7), 8, Some(this_pid)));
+    }
+
+    #[test]
+    fn hotreload_target_filter_accepts_web_broadcast_or_zero_pid() {
+        assert!(hotreload_matches_target(None, None, 0, None));
+        assert!(hotreload_matches_target(Some(0), None, 0, None));
+        assert!(!hotreload_matches_target(Some(99), None, 0, None));
+    }
+
+    #[test]
+    fn hotpatch_query_preserves_existing_query() {
+        assert_eq!(
+            append_hotpatch_query("ws://127.0.0.1:8080/_dioxus", 1, 2, 3),
+            "ws://127.0.0.1:8080/_dioxus?aslr_reference=1&build_id=2&pid=3"
+        );
+        assert_eq!(
+            append_hotpatch_query("ws://127.0.0.1:8080/_dioxus?foo=bar", 1, 2, 3),
+            "ws://127.0.0.1:8080/_dioxus?foo=bar&aslr_reference=1&build_id=2&pid=3"
+        );
+    }
+
+    #[test]
+    fn web_endpoint_uses_page_host_and_secure_scheme() {
+        assert_eq!(
+            web_devserver_endpoint_from_location("http:", "127.0.0.1:8080"),
+            Some(String::from("ws://127.0.0.1:8080/_dioxus"))
+        );
+        assert_eq!(
+            web_devserver_endpoint_from_location("https:", "example.test"),
+            Some(String::from("wss://example.test/_dioxus"))
+        );
+        assert_eq!(web_devserver_endpoint_from_location("http:", ""), None);
     }
 
     #[test]

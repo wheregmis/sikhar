@@ -303,8 +303,10 @@ where
             .unwrap_or_default();
 
         let child = {
-            let mut component_ctx = ComponentContext::new(ctx, &mut state);
-            (self.render)(&mut component_ctx).into_widget()
+            crate::hotpatch::call(|| {
+                let mut component_ctx = ComponentContext::new(ctx, &mut state);
+                (self.render)(&mut component_ctx).into_widget()
+            })
         };
         state.hooks.truncate(state.active_hooks);
 

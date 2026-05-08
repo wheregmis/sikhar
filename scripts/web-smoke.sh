@@ -21,7 +21,6 @@ declare -A EXAMPLE_PORTS=(
   [todo]="${SPARSH_TODO_PORT:-4175}"
   [kitchen-sink]="${SPARSH_KITCHEN_SINK_PORT:-4173}"
   [hybrid-overlay]="${SPARSH_HYBRID_OVERLAY_PORT:-4174}"
-  [counter]="${SPARSH_COUNTER_PORT:-4177}"
   [layout-probe]="${SPARSH_LAYOUT_PROBE_PORT:-4178}"
 )
 
@@ -30,7 +29,6 @@ declare -A EXAMPLE_URL_VARS=(
   [todo]="SPARSH_TODO_URL"
   [kitchen-sink]="SPARSH_KITCHEN_SINK_URL"
   [hybrid-overlay]="SPARSH_HYBRID_OVERLAY_URL"
-  [counter]="SPARSH_COUNTER_URL"
   [layout-probe]="SPARSH_LAYOUT_PROBE_URL"
 )
 
@@ -39,7 +37,6 @@ declare -A EXAMPLE_SPEC_FILES=(
   [todo]="tests/playwright/todo.spec.ts"
   [kitchen-sink]="tests/playwright/kitchen-sink.spec.ts"
   [hybrid-overlay]="tests/playwright/hybrid-overlay.spec.ts"
-  [counter]="tests/playwright/counter.spec.ts"
   [layout-probe]="tests/playwright/layout-probe.spec.ts"
 )
 
@@ -54,7 +51,7 @@ if [[ ! -d "$PLAYWRIGHT_BROWSERS_PATH" && -z "${CHROME_PATH:-}" ]]; then
   exit 1
 fi
 
-for example in showcase todo kitchen-sink hybrid-overlay counter layout-probe; do
+for example in showcase todo kitchen-sink hybrid-overlay layout-probe; do
   echo "[web-smoke] building ${example}"
   "$ROOT_DIR/scripts/web-build-example.sh" "$example"
   port="${EXAMPLE_PORTS[$example]}"
@@ -63,7 +60,7 @@ for example in showcase todo kitchen-sink hybrid-overlay counter layout-probe; d
   SERVER_PIDS+=("$!")
 done
 
-for example in showcase todo kitchen-sink hybrid-overlay counter layout-probe; do
+for example in showcase todo kitchen-sink hybrid-overlay layout-probe; do
   port="${EXAMPLE_PORTS[$example]}"
   url="http://127.0.0.1:${port}/"
   for _ in {1..20}; do
@@ -89,7 +86,6 @@ else
     "${EXAMPLE_SPEC_FILES[todo]}"
     "${EXAMPLE_SPEC_FILES[kitchen-sink]}"
     "${EXAMPLE_SPEC_FILES[hybrid-overlay]}"
-    "${EXAMPLE_SPEC_FILES[counter]}"
     "${EXAMPLE_SPEC_FILES[layout-probe]}"
   )
 fi
