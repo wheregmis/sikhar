@@ -809,8 +809,8 @@ mod tests {
         fn style(&self) -> taffy::Style {
             taffy::Style {
                 size: Size {
-                    width: length(200.0),
-                    height: length(100.0),
+                    width: length(200.0_f32),
+                    height: length(100.0_f32),
                 },
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
@@ -943,8 +943,8 @@ mod tests {
         fn style(&self) -> taffy::Style {
             taffy::Style {
                 size: Size {
-                    width: length(200.0),
-                    height: length(60.0),
+                    width: length(200.0_f32),
+                    height: length(60.0_f32),
                 },
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
@@ -997,8 +997,8 @@ mod tests {
         fn style(&self) -> taffy::Style {
             taffy::Style {
                 size: Size {
-                    width: length(120.0),
-                    height: length(40.0),
+                    width: length(120.0_f32),
+                    height: length(40.0_f32),
                 },
                 ..Default::default()
             }
@@ -1046,8 +1046,8 @@ mod tests {
         fn style(&self) -> taffy::Style {
             taffy::Style {
                 size: Size {
-                    width: length(120.0),
-                    height: length(40.0),
+                    width: length(120.0_f32),
+                    height: length(40.0_f32),
                 },
                 ..Default::default()
             }
@@ -1116,8 +1116,8 @@ mod tests {
         fn style(&self) -> taffy::Style {
             taffy::Style {
                 size: Size {
-                    width: length(80.0),
-                    height: length(24.0),
+                    width: length(80.0_f32),
+                    height: length(24.0_f32),
                 },
                 ..Default::default()
             }

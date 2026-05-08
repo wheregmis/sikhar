@@ -258,21 +258,21 @@ impl Container {
     /// Fill available space.
     pub fn fill(mut self) -> Self {
         self.style.size = Size {
-            width: percent(1.0),
-            height: percent(1.0),
+            width: percent(1.0_f32),
+            height: percent(1.0_f32),
         };
         self
     }
 
     /// Fill width only (height auto).
     pub fn fill_width(mut self) -> Self {
-        self.style.size.width = percent(1.0);
+        self.style.size.width = percent(1.0_f32);
         self
     }
 
     /// Fill height only (width auto).
     pub fn fill_height(mut self) -> Self {
-        self.style.size.height = percent(1.0);
+        self.style.size.height = percent(1.0_f32);
         self
     }
 
@@ -362,16 +362,16 @@ mod tests {
             .flex_grow(1.0)
             .flex_shrink(0.0)
             .wrap();
-        container.style.min_size.width = length(200.0);
-        container.style.min_size.height = length(120.0);
+        container.style.min_size.width = length(200.0_f32);
+        container.style.min_size.height = length(120.0_f32);
 
         assert_eq!(container.style.flex_direction, FlexDirection::Row);
-        assert_eq!(container.style.gap.width, length(12.0));
-        assert_eq!(container.style.padding.left, length(16.0));
-        assert_eq!(container.style.size.width, length(320.0));
-        assert_eq!(container.style.size.height, length(180.0));
-        assert_eq!(container.style.min_size.width, length(200.0));
-        assert_eq!(container.style.min_size.height, length(120.0));
+        assert_eq!(container.style.gap.width, length(12.0_f32));
+        assert_eq!(container.style.padding.left, length(16.0_f32));
+        assert_eq!(container.style.size.width, length(320.0_f32));
+        assert_eq!(container.style.size.height, length(180.0_f32));
+        assert_eq!(container.style.min_size.width, length(200.0_f32));
+        assert_eq!(container.style.min_size.height, length(120.0_f32));
         assert_eq!(container.style.flex_grow, 1.0);
         assert_eq!(container.style.flex_shrink, 0.0);
         assert_eq!(container.style.flex_wrap, taffy::FlexWrap::Wrap);

@@ -126,8 +126,8 @@ impl Scroll {
     /// Fill available space.
     pub fn fill(mut self) -> Self {
         self.layout_style.size = Size {
-            width: percent(1.0),
-            height: percent(1.0),
+            width: percent(1.0_f32),
+            height: percent(1.0_f32),
         };
         self.layout_style.align_self = Some(AlignSelf::Stretch);
         self
@@ -135,13 +135,13 @@ impl Scroll {
 
     /// Fill width.
     pub fn fill_width(mut self) -> Self {
-        self.layout_style.size.width = percent(1.0);
+        self.layout_style.size.width = percent(1.0_f32);
         self
     }
 
     /// Fill height.
     pub fn fill_height(mut self) -> Self {
-        self.layout_style.size.height = percent(1.0);
+        self.layout_style.size.height = percent(1.0_f32);
         self
     }
 
@@ -778,8 +778,8 @@ mod tests {
             scroll.scrollbar_style_override.as_ref().map(|it| it.width),
             Some(style.width)
         );
-        assert_eq!(scroll.layout_style.size.width, length(320.0));
-        assert_eq!(scroll.layout_style.size.height, length(240.0));
+        assert_eq!(scroll.layout_style.size.width, length(320.0_f32));
+        assert_eq!(scroll.layout_style.size.height, length(240.0_f32));
         assert_eq!(scroll.layout_style.flex_grow, 1.0);
         assert!(scroll.debug_overlay);
         assert_eq!(scroll.children().len(), 1);

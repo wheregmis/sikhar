@@ -107,7 +107,7 @@ pub(crate) fn resolve_editor_style(
 pub(crate) fn editor_widget_style(style: &TextInputStyle, fill_width: bool) -> Style {
     Style {
         size: Size {
-            width: if fill_width { percent(1.0) } else { auto() },
+            width: if fill_width { percent(1.0_f32) } else { auto() },
             height: auto(),
         },
         padding: Rect {

@@ -197,8 +197,8 @@ impl Widget for LayoutGuide {
             flex_direction: FlexDirection::Column,
             align_items: Some(AlignItems::Stretch),
             size: Size {
-                width: percent(1.0),
-                height: percent(1.0),
+                width: percent(1.0_f32),
+                height: percent(1.0_f32),
             },
             ..Default::default()
         }

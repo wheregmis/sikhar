@@ -174,8 +174,8 @@ impl Widget for Stack {
     fn style(&self) -> Style {
         Style {
             size: Size {
-                width: percent(1.0),
-                height: percent(1.0),
+                width: percent(1.0_f32),
+                height: percent(1.0_f32),
             },
             position: Position::Relative,
             ..Default::default()
@@ -520,8 +520,8 @@ impl Widget for Align {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
             size: Size {
-                width: percent(1.0),
-                height: percent(1.0),
+                width: percent(1.0_f32),
+                height: percent(1.0_f32),
             },
             justify_content: Some(self.alignment.into_main_axis()),
             align_items: Some(self.alignment.into_cross_axis()),
@@ -573,8 +573,8 @@ impl Widget for Center {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
             size: Size {
-                width: percent(1.0),
-                height: percent(1.0),
+                width: percent(1.0_f32),
+                height: percent(1.0_f32),
             },
             justify_content: Some(JustifyContent::Center),
             align_items: Some(AlignItems::Center),
@@ -634,12 +634,12 @@ mod tests {
             .size(56.0, 56.0);
         let style = positioned.style();
         assert_eq!(style.position, Position::Absolute);
-        assert_eq!(style.inset.left, length(12.0));
-        assert_eq!(style.inset.right, length(16.0));
-        assert_eq!(style.inset.top, length(20.0));
-        assert_eq!(style.inset.bottom, length(24.0));
-        assert_eq!(style.size.width, length(56.0));
-        assert_eq!(style.size.height, length(56.0));
+        assert_eq!(style.inset.left, length(12.0_f32));
+        assert_eq!(style.inset.right, length(16.0_f32));
+        assert_eq!(style.inset.top, length(20.0_f32));
+        assert_eq!(style.inset.bottom, length(24.0_f32));
+        assert_eq!(style.size.width, length(56.0_f32));
+        assert_eq!(style.size.height, length(56.0_f32));
     }
 
     #[test]
@@ -650,17 +650,17 @@ mod tests {
         );
         let style = stack.children()[0].style();
         assert_eq!(style.position, Position::Absolute);
-        assert_eq!(style.inset.left, length(0.0));
-        assert_eq!(style.inset.right, length(0.0));
-        assert_eq!(style.inset.top, length(0.0));
-        assert_eq!(style.inset.bottom, length(0.0));
+        assert_eq!(style.inset.left, length(0.0_f32));
+        assert_eq!(style.inset.right, length(0.0_f32));
+        assert_eq!(style.inset.top, length(0.0_f32));
+        assert_eq!(style.inset.bottom, length(0.0_f32));
     }
 
     #[test]
     fn sized_box_tracks_explicit_dimensions() {
         let box_ = SizedBox::new().width(120.0).height(48.0);
-        assert_eq!(box_.style().size.width, length(120.0));
-        assert_eq!(box_.style().size.height, length(48.0));
+        assert_eq!(box_.style().size.width, length(120.0_f32));
+        assert_eq!(box_.style().size.height, length(48.0_f32));
     }
 
     #[test]
@@ -673,10 +673,10 @@ mod tests {
             Text::builder().content("padded").build(),
         );
         let style = padding.style();
-        assert_eq!(style.padding.left, length(12.0));
-        assert_eq!(style.padding.right, length(16.0));
-        assert_eq!(style.padding.top, length(20.0));
-        assert_eq!(style.padding.bottom, length(24.0));
+        assert_eq!(style.padding.left, length(12.0_f32));
+        assert_eq!(style.padding.right, length(16.0_f32));
+        assert_eq!(style.padding.top, length(20.0_f32));
+        assert_eq!(style.padding.bottom, length(24.0_f32));
     }
 
     #[test]
@@ -688,8 +688,8 @@ mod tests {
                 .build(),
         );
         let style = align.style();
-        assert_eq!(style.size.width, percent(1.0));
-        assert_eq!(style.size.height, percent(1.0));
+        assert_eq!(style.size.width, percent(1.0_f32));
+        assert_eq!(style.size.height, percent(1.0_f32));
         assert_eq!(style.justify_content, Some(JustifyContent::FlexEnd));
         assert_eq!(style.align_items, Some(AlignItems::FlexEnd));
     }
@@ -698,8 +698,8 @@ mod tests {
     fn center_maps_to_full_size_centering() {
         let center = Center::new(Text::builder().content("centered").build());
         let style = center.style();
-        assert_eq!(style.size.width, percent(1.0));
-        assert_eq!(style.size.height, percent(1.0));
+        assert_eq!(style.size.width, percent(1.0_f32));
+        assert_eq!(style.size.height, percent(1.0_f32));
         assert_eq!(style.justify_content, Some(JustifyContent::Center));
         assert_eq!(style.align_items, Some(AlignItems::Center));
     }

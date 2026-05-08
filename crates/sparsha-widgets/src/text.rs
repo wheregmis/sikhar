@@ -193,7 +193,7 @@ impl Widget for Text {
                     || self.wrap != TextWrap::NoWrap
                     || matches!(self.overflow, TextOverflow::Ellipsis)
                 {
-                    percent(1.0)
+                    percent(1.0_f32)
                 } else {
                     auto()
                 },
@@ -429,9 +429,9 @@ mod tests {
             .build();
 
         assert_eq!(intrinsic.style().size.width, auto());
-        assert_eq!(stretched.style().size.width, percent(1.0));
-        assert_eq!(wrapped.style().size.width, percent(1.0));
-        assert_eq!(ellipsized.style().size.width, percent(1.0));
+        assert_eq!(stretched.style().size.width, percent(1.0_f32));
+        assert_eq!(wrapped.style().size.width, percent(1.0_f32));
+        assert_eq!(ellipsized.style().size.width, percent(1.0_f32));
     }
 
     #[test]

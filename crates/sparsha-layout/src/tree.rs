@@ -278,8 +278,8 @@ mod perf_tests {
             for _ in 0..8 {
                 let leaf = tree.new_leaf(Style {
                     size: Size {
-                        width: length(120.0),
-                        height: length(28.0),
+                        width: length(120.0_f32),
+                        height: length(28.0_f32),
                     },
                     ..Default::default()
                 });
@@ -292,8 +292,8 @@ mod perf_tests {
                     display: Display::Flex,
                     flex_direction: FlexDirection::Row,
                     gap: Size {
-                        width: length(8.0),
-                        height: length(8.0),
+                        width: length(8.0_f32),
+                        height: length(8.0_f32),
                     },
                     ..Default::default()
                 },
@@ -308,11 +308,11 @@ mod perf_tests {
                 display: Display::Flex,
                 flex_direction: FlexDirection::Column,
                 gap: Size {
-                    width: length(12.0),
-                    height: length(12.0),
+                    width: length(12.0_f32),
+                    height: length(12.0_f32),
                 },
                 size: Size {
-                    width: length(1440.0),
+                    width: length(1440.0_f32),
                     height: auto(),
                 },
                 ..Default::default()
@@ -392,8 +392,8 @@ pub mod styles {
     pub fn fill() -> Style {
         Style {
             size: Size {
-                width: percent(1.0),
-                height: percent(1.0),
+                width: percent(1.0_f32),
+                height: percent(1.0_f32),
             },
             ..Default::default()
         }
@@ -499,24 +499,24 @@ mod tests {
     #[test]
     fn styles_fixed_fill() {
         let s = styles::fixed(120.0, 60.0);
-        assert_eq!(s.size.width, Dimension::length(120.0));
-        assert_eq!(s.size.height, Dimension::length(60.0));
+        assert_eq!(s.size.width, Dimension::length(120.0_f32));
+        assert_eq!(s.size.height, Dimension::length(60.0_f32));
         let f = styles::fill();
-        assert_eq!(f.size.width, Dimension::percent(1.0));
-        assert_eq!(f.size.height, Dimension::percent(1.0));
+        assert_eq!(f.size.width, Dimension::percent(1.0_f32));
+        assert_eq!(f.size.height, Dimension::percent(1.0_f32));
     }
 
     #[test]
     fn styles_with_padding_margin_gap() {
         let base = styles::flex_column();
         let s = styles::with_padding(base, 10.0);
-        assert_eq!(s.padding.left, LengthPercentage::length(10.0));
-        assert_eq!(s.padding.right, LengthPercentage::length(10.0));
+        assert_eq!(s.padding.left, LengthPercentage::length(10.0_f32));
+        assert_eq!(s.padding.right, LengthPercentage::length(10.0_f32));
         let s2 = styles::with_margin(styles::flex_row(), 5.0);
-        assert_eq!(s2.margin.left, LengthPercentageAuto::length(5.0));
+        assert_eq!(s2.margin.left, LengthPercentageAuto::length(5.0_f32));
         let s3 = styles::with_gap(styles::flex_column(), 8.0);
-        assert_eq!(s3.gap.width, LengthPercentage::length(8.0));
-        assert_eq!(s3.gap.height, LengthPercentage::length(8.0));
+        assert_eq!(s3.gap.width, LengthPercentage::length(8.0_f32));
+        assert_eq!(s3.gap.height, LengthPercentage::length(8.0_f32));
     }
 
     #[test]

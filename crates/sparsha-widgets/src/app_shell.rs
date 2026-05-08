@@ -84,7 +84,7 @@ impl Widget for AppBar {
     fn style(&self) -> Style {
         Style {
             size: Size {
-                width: percent(1.0),
+                width: percent(1.0_f32),
                 height: length(self.height),
             },
             ..Default::default()
@@ -483,7 +483,7 @@ impl Widget for ScaffoldBody {
             flex_grow: 1.0,
             flex_shrink: 1.0,
             size: Size {
-                width: percent(1.0),
+                width: percent(1.0_f32),
                 height: auto(),
             },
             position: Position::Relative,
@@ -546,8 +546,8 @@ impl Widget for Scaffold {
             display: Display::Flex,
             flex_direction: FlexDirection::Column,
             size: Size {
-                width: percent(1.0),
-                height: percent(1.0),
+                width: percent(1.0_f32),
+                height: percent(1.0_f32),
             },
             ..Default::default()
         }
@@ -582,8 +582,8 @@ mod tests {
 
         let bar = AppBar::new("Hello");
         let style = bar.style();
-        assert_eq!(style.size.width, percent(1.0));
-        assert_eq!(style.size.height, length(56.0));
+        assert_eq!(style.size.width, percent(1.0_f32));
+        assert_eq!(style.size.height, length(56.0_f32));
         assert_eq!(
             bar.accessibility_info().and_then(|info| info.label),
             Some("Hello".into())
@@ -597,7 +597,7 @@ mod tests {
             .floating_action_button(FloatingActionButton::new("+"));
 
         assert_eq!(scaffold.children().len(), 2);
-        assert_eq!(scaffold.children()[0].style().size.height, length(56.0));
+        assert_eq!(scaffold.children()[0].style().size.height, length(56.0_f32));
         assert_eq!(scaffold.children()[1].children().len(), 2);
         assert_eq!(scaffold.children()[1].style().flex_grow, 1.0);
         assert_eq!(scaffold.children()[1].children()[1].children().len(), 1);

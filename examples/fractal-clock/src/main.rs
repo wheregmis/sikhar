@@ -749,8 +749,8 @@ impl Widget for FractalClock {
     fn style(&self) -> taffy::Style {
         taffy::Style {
             size: taffy::prelude::Size {
-                width: taffy::prelude::percent(1.0),
-                height: taffy::prelude::percent(1.0),
+                width: taffy::prelude::percent(1.0_f32),
+                height: taffy::prelude::percent(1.0_f32),
             },
             ..Default::default()
         }

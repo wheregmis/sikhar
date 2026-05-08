@@ -1853,8 +1853,8 @@ mod tests {
         fn style(&self) -> taffy::Style {
             taffy::Style {
                 size: taffy::prelude::Size {
-                    width: taffy::prelude::length(240.0),
-                    height: taffy::prelude::length(140.0),
+                    width: taffy::prelude::length(240.0_f32),
+                    height: taffy::prelude::length(140.0_f32),
                 },
                 ..Default::default()
             }

@@ -114,19 +114,19 @@ impl DrawSurface {
 
     pub fn fill(mut self) -> Self {
         self.style.size = taffy::prelude::Size {
-            width: taffy::prelude::percent(1.0),
-            height: taffy::prelude::percent(1.0),
+            width: taffy::prelude::percent(1.0_f32),
+            height: taffy::prelude::percent(1.0_f32),
         };
         self
     }
 
     pub fn fill_width(mut self) -> Self {
-        self.style.size.width = taffy::prelude::percent(1.0);
+        self.style.size.width = taffy::prelude::percent(1.0_f32);
         self
     }
 
     pub fn fill_height(mut self) -> Self {
-        self.style.size.height = taffy::prelude::percent(1.0);
+        self.style.size.height = taffy::prelude::percent(1.0_f32);
         self
     }
 

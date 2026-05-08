@@ -1319,12 +1319,12 @@ impl Widget for MotionPreview {
     fn style(&self) -> Style {
         Style {
             size: Size {
-                width: percent(1.0),
-                height: length(132.0),
+                width: percent(1.0_f32),
+                height: length(132.0_f32),
             },
             min_size: Size {
-                width: percent(1.0),
-                height: length(132.0),
+                width: percent(1.0_f32),
+                height: length(132.0_f32),
             },
             ..Default::default()
         }
@@ -1419,11 +1419,11 @@ impl Widget for RenderingAtlas {
         let height = rendering_atlas_height(current_viewport());
         Style {
             size: Size {
-                width: percent(1.0),
+                width: percent(1.0_f32),
                 height: length(height),
             },
             min_size: Size {
-                width: percent(1.0),
+                width: percent(1.0_f32),
                 height: length(height),
             },
             ..Default::default()

@@ -171,11 +171,11 @@ impl Widget for ListSpacer {
         match self.direction {
             ListDirection::Vertical => Style {
                 size: Size {
-                    width: percent(1.0),
+                    width: percent(1.0_f32),
                     height: length(self.extent),
                 },
                 min_size: Size {
-                    width: percent(1.0),
+                    width: percent(1.0_f32),
                     height: length(self.extent),
                 },
                 ..Default::default()
@@ -183,11 +183,11 @@ impl Widget for ListSpacer {
             ListDirection::Horizontal => Style {
                 size: Size {
                     width: length(self.extent),
-                    height: percent(1.0),
+                    height: percent(1.0_f32),
                 },
                 min_size: Size {
                     width: length(self.extent),
-                    height: percent(1.0),
+                    height: percent(1.0_f32),
                 },
                 ..Default::default()
             },
@@ -309,21 +309,21 @@ impl List {
 
     /// Fill available width.
     pub fn fill_width(mut self) -> Self {
-        self.style.size.width = percent(1.0);
+        self.style.size.width = percent(1.0_f32);
         self
     }
 
     /// Fill available height.
     pub fn fill_height(mut self) -> Self {
-        self.style.size.height = percent(1.0);
+        self.style.size.height = percent(1.0_f32);
         self
     }
 
     /// Fill width and height.
     pub fn fill(mut self) -> Self {
         self.style.size = Size {
-            width: percent(1.0),
-            height: percent(1.0),
+            width: percent(1.0_f32),
+            height: percent(1.0_f32),
         };
         self
     }
@@ -388,8 +388,8 @@ impl List {
     fn virtualized_style(&self) -> Style {
         let mut style = self.style.clone();
         style.gap = Size {
-            width: length(0.0),
-            height: length(0.0),
+            width: length(0.0_f32),
+            height: length(0.0_f32),
         };
         style
     }
@@ -866,10 +866,10 @@ mod tests {
 
         assert_eq!(list.direction, ListDirection::Horizontal);
         assert_eq!(list.style.flex_direction, FlexDirection::Row);
-        assert_eq!(list.style.gap.width, length(10.0));
-        assert_eq!(list.style.padding.left, length(12.0));
-        assert_eq!(list.style.size.width, percent(1.0));
-        assert_eq!(list.style.size.height, percent(1.0));
+        assert_eq!(list.style.gap.width, length(10.0_f32));
+        assert_eq!(list.style.padding.left, length(12.0_f32));
+        assert_eq!(list.style.size.width, percent(1.0_f32));
+        assert_eq!(list.style.size.height, percent(1.0_f32));
     }
 
     #[test]

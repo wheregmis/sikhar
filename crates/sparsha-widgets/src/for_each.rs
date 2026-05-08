@@ -88,12 +88,12 @@ impl ForEach {
     }
 
     pub fn fill_width(mut self) -> Self {
-        self.style.size.width = percent(1.0);
+        self.style.size.width = percent(1.0_f32);
         self
     }
 
     pub fn fill_height(mut self) -> Self {
-        self.style.size.height = percent(1.0);
+        self.style.size.height = percent(1.0_f32);
         self
     }
 
