@@ -25,3 +25,4 @@ examples/todo/.npm-cache/
 artifacts/
 # CocoIndex Code (ccc)
 /.cocoindex_code/
+.omx

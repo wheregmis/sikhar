@@ -1,6 +1,7 @@
 use crate::accessibility::AccessibilityTreeSnapshot;
 use crate::app::AppTheme;
 use crate::component::ComponentStateStore;
+use crate::platform::layout::{compute_platform_layout, LayoutViewport};
 use crate::platform::{PlatformEffect, PlatformEffects};
 use crate::runtime_widget::{
     add_widget_to_layout, apply_focus_change, apply_post_layout_measurements,
@@ -205,11 +206,10 @@ impl RuntimeHost<'_> {
         });
         self.layout_tree.set_root(root_id);
         *self.widget_registry = widget_registry;
-        self.layout_tree
-            .compute_layout(self.viewport.width.max(1.0), self.viewport.height.max(1.0));
+        let layout_viewport = LayoutViewport::new(self.viewport.width, self.viewport.height);
+        compute_platform_layout(self.layout_tree, layout_viewport);
         if apply_post_layout_measurements(self.root_widget, self.layout_tree, self.text_system) {
-            self.layout_tree
-                .compute_layout(self.viewport.width.max(1.0), self.viewport.height.max(1.0));
+            compute_platform_layout(self.layout_tree, layout_viewport);
         }
         *self.focused_path = remap_path(self.focused_path.take(), self.widget_registry);
         *self.capture_path = remap_path(self.capture_path.take(), self.widget_registry);

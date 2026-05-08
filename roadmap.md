@@ -115,10 +115,10 @@ Milestone checkboxes track implementation landing in the repo. The unchecked ite
 Goal: keep `sparsha` app bootstrap thin and move platform-specific behavior behind explicit adapters so native and web stay feature-parity without duplicating runtime logic.
 
 ### Phase 1 — Layout Boundary (No Behavior Change)
-- [ ] Keep `sparsha-layout` as the single layout authority and make both runtimes consume the same layout snapshot contract.
-- [ ] Introduce a small internal layout adapter seam in `sparsha` (`platform::layout`) that only depends on `LayoutTree`, `ComputedLayout`, and `WidgetId`.
-- [ ] Remove any direct runtime-specific viewport/layout coupling from widget build paths; pass viewport via a shared adapter input.
-- [ ] Add parity tests that assert identical layout outputs for representative widget trees regardless of native/web runtime entrypoint.
+- [x] Keep `sparsha-layout` as the single layout authority and make both runtimes consume the same layout snapshot contract.
+- [x] Introduce a small internal layout adapter seam in `sparsha` (`platform::layout`) that only depends on `LayoutTree`, `ComputedLayout`, and `WidgetId`.
+- [x] Remove any direct runtime-specific viewport/layout coupling from widget build paths; pass viewport via a shared adapter input.
+- [x] Add parity tests that assert identical layout outputs for representative widget trees regardless of native/web runtime entrypoint.
 
 ### Phase 2 — Event Boundary (Normalize Platform Input)
 - [ ] Add internal platform event adapters (`platform::events::native`, `platform::events::web`) that translate host events into `sparsha_input::InputEvent`.
