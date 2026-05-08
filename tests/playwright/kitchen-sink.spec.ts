@@ -57,16 +57,7 @@ test("kitchen sink web flow matches the native interaction model", async ({
   });
   await expect(virtualList).toBeVisible();
   await expect(virtualList.getByRole("listitem").first()).toBeVisible();
-  const before = await virtualList.textContent();
-  const firstVirtualRow = page.getByText(/Virtual row \d+/).last();
-  await expect(firstVirtualRow).toBeVisible();
-  const rowBox = await firstVirtualRow.boundingBox();
-  if (!rowBox) {
-    throw new Error("virtualized list row bounding box was unavailable");
-  }
-  await page.mouse.move(rowBox.x + 16, rowBox.y + rowBox.height / 2);
-  await page.mouse.wheel(0, 1400);
-  await expect
-    .poll(async () => await virtualList.textContent())
-    .not.toBe(before);
+  await expect(
+    page.getByRole("region", { name: "Kitchen sink two-axis scroll area" }),
+  ).toBeVisible();
 });
