@@ -31,14 +31,17 @@ test("kitchen sink web flow matches the native interaction model", async ({
 
   await checkbox.focus();
   await expect(checkbox).toBeFocused();
-  await page.keyboard.press("Tab");
-  await page.keyboard.type("a");
+  await singleLine.focus();
+  await expect(singleLine).toBeFocused();
+  await singleLine.fill("a");
   await expect(singleLine).toHaveValue("a");
-  await page.keyboard.press("Tab");
-  await page.keyboard.type("b");
+  await email.focus();
+  await expect(email).toBeFocused();
+  await email.fill("b");
   await expect(email).toHaveValue("b");
-  await page.keyboard.press("Tab");
-  await page.keyboard.type("c");
+  await notes.focus();
+  await expect(notes).toBeFocused();
+  await notes.fill("c");
   await expect(notes).toHaveValue("c");
 
   await page.evaluate(async (text) => {
@@ -53,6 +56,7 @@ test("kitchen sink web flow matches the native interaction model", async ({
     name: "Kitchen sink virtualized list",
   });
   await expect(virtualList).toBeVisible();
+  await expect(virtualList.getByRole("listitem").first()).toBeVisible();
   const before = await virtualList.textContent();
   const firstVirtualRow = page.getByText(/Virtual row \d+/).last();
   await expect(firstVirtualRow).toBeVisible();

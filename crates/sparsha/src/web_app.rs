@@ -1920,6 +1920,7 @@ mod wasm_tests {
                 id: 7,
                 path: vec![0],
                 role: AccessibilityRole::TextInput,
+                heading_level: None,
                 label: Some("Email".to_owned()),
                 description: None,
                 value: Some("hello@example.com".to_owned()),

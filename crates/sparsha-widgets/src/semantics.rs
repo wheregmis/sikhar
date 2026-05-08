@@ -43,6 +43,11 @@ impl Semantics {
         self
     }
 
+    pub fn heading_level(mut self, level: u8) -> Self {
+        self.info.heading_level = Some(level.clamp(1, 6));
+        self
+    }
+
     pub fn hidden(mut self, hidden: bool) -> Self {
         self.info.hidden = hidden;
         self
@@ -100,6 +105,7 @@ mod tests {
             .description("Helpful context")
             .value("42")
             .role(AccessibilityRole::Button)
+            .heading_level(3)
             .hidden(true);
 
         assert_eq!(semantics.info.label.as_deref(), Some("Button label"));
@@ -109,6 +115,7 @@ mod tests {
         );
         assert_eq!(semantics.info.value.as_deref(), Some("42"));
         assert_eq!(semantics.info.role, Some(AccessibilityRole::Button));
+        assert_eq!(semantics.info.heading_level, Some(3));
         assert!(semantics.info.hidden);
     }
 }

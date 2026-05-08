@@ -17,6 +17,7 @@ pub(crate) struct AccessibilityNodeSnapshot {
     pub id: u64,
     pub path: Vec<usize>,
     pub role: AccessibilityRole,
+    pub heading_level: Option<u8>,
     pub label: Option<String>,
     pub description: Option<String>,
     pub value: Option<String>,
@@ -32,6 +33,9 @@ impl AccessibilityNodeSnapshot {
     pub(crate) fn apply_overrides(&mut self, info: AccessibilityInfo) {
         if let Some(role) = info.role {
             self.role = role;
+        }
+        if let Some(heading_level) = info.heading_level {
+            self.heading_level = Some(heading_level);
         }
         if let Some(label) = info.label {
             self.label = Some(label);
@@ -194,10 +198,18 @@ fn accesskit_role(value: AccessibilityRole) -> Role {
         AccessibilityRole::Button => Role::Button,
         AccessibilityRole::CheckBox => Role::CheckBox,
         AccessibilityRole::Label => Role::Label,
+        AccessibilityRole::Paragraph => Role::Paragraph,
+        AccessibilityRole::Heading => Role::Heading,
+        AccessibilityRole::Link => Role::Link,
+        AccessibilityRole::Image => Role::Image,
         AccessibilityRole::TextInput => Role::TextInput,
         AccessibilityRole::MultilineTextInput => Role::MultilineTextInput,
         AccessibilityRole::List => Role::List,
+        AccessibilityRole::ListItem => Role::ListItem,
+        AccessibilityRole::Region => Role::Region,
         AccessibilityRole::ScrollView => Role::ScrollView,
+        AccessibilityRole::Slider => Role::Slider,
+        AccessibilityRole::Progress => Role::ProgressIndicator,
     }
 }
 
@@ -247,6 +259,7 @@ mod tests {
                 id: 42,
                 path: vec![0],
                 role: AccessibilityRole::Button,
+                heading_level: None,
                 label: Some("Press".to_owned()),
                 description: None,
                 value: None,

@@ -274,6 +274,7 @@ pub(crate) fn collect_accessibility_tree(
                 id: accessibility_node_id(path),
                 path: path.to_vec(),
                 role: info.role.unwrap_or(AccessibilityRole::GenericContainer),
+                heading_level: info.heading_level,
                 label: info.label,
                 description: info.description,
                 value: info.value,
@@ -284,6 +285,48 @@ pub(crate) fn collect_accessibility_tree(
                 bounds,
                 children,
             }
+        }
+
+        fn wrap_list_items(&mut self, root_nodes: Vec<u64>) -> Vec<u64> {
+            root_nodes
+                .into_iter()
+                .map(|child_id| {
+                    let Some(child_index) = self.node_indices.get(&child_id).copied() else {
+                        return child_id;
+                    };
+                    if self.nodes[child_index].role == AccessibilityRole::ListItem {
+                        return child_id;
+                    }
+
+                    let child = self.nodes[child_index].clone();
+                    let mut list_item_path = child.path.clone();
+                    list_item_path.push(usize::MAX - 2);
+                    let list_item_id = accessibility_node_id(&list_item_path);
+                    if self.node_indices.contains_key(&list_item_id) {
+                        return list_item_id;
+                    }
+
+                    let snapshot = AccessibilityNodeSnapshot {
+                        id: list_item_id,
+                        path: list_item_path.clone(),
+                        role: AccessibilityRole::ListItem,
+                        heading_level: None,
+                        label: None,
+                        description: None,
+                        value: None,
+                        hidden: child.hidden,
+                        disabled: false,
+                        checked: None,
+                        actions: Vec::new(),
+                        bounds: child.bounds,
+                        children: vec![child_id],
+                    };
+                    self.node_paths.insert(list_item_id, list_item_path);
+                    self.node_indices.insert(list_item_id, self.nodes.len());
+                    self.nodes.push(snapshot);
+                    list_item_id
+                })
+                .collect()
         }
 
         fn visit(
@@ -344,6 +387,11 @@ pub(crate) fn collect_accessibility_tree(
                         focused_node,
                     };
                 }
+            }
+
+            let role = info.role.unwrap_or(AccessibilityRole::GenericContainer);
+            if role == AccessibilityRole::List {
+                root_nodes = self.wrap_list_items(root_nodes);
             }
 
             let snapshot = self.build_snapshot(widget, path, info, root_nodes.clone());
@@ -733,8 +781,8 @@ mod tests {
     use sparsha_render::{DrawCommand, DrawList};
     use sparsha_text::{TextLayoutAlignment, TextWrap};
     use sparsha_widgets::{
-        Button, Container, CrossAxisAlignment, MainAxisAlignment, PaintCommands, PaintContext,
-        Semantics, Text, TextAlign, TextInput, WidgetChildMode,
+        Button, Container, CrossAxisAlignment, List, MainAxisAlignment, PaintCommands,
+        PaintContext, Semantics, Text, TextAlign, TextInput, TextVariant, WidgetChildMode,
     };
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
@@ -1428,6 +1476,53 @@ mod tests {
         let node = &tree.nodes[0];
         assert_eq!(node.role, sparsha_widgets::AccessibilityRole::Button);
         assert_eq!(node.label.as_deref(), Some("Explicit accessible label"));
+    }
+
+    #[test]
+    fn text_variants_and_lists_produce_native_semantic_role_tree() {
+        let mut list = List::empty().vertical();
+        list.push_item(Text::builder().content("First row").build());
+        list.push_item(Text::builder().content("Second row").build());
+
+        let mut root = Container::column()
+            .child(
+                Text::builder()
+                    .content("Native heading")
+                    .variant(TextVariant::Header)
+                    .build(),
+            )
+            .child(list);
+        let (layout_tree, _) = build_registry(&mut root);
+        let tree = collect_accessibility_tree(&root, &layout_tree, None);
+
+        let heading_id = tree.root_children[0];
+        let heading = tree
+            .nodes
+            .iter()
+            .find(|node| node.id == heading_id)
+            .expect("heading node");
+        assert_eq!(heading.role, AccessibilityRole::Heading);
+        assert_eq!(heading.heading_level, Some(1));
+        assert_eq!(heading.label.as_deref(), Some("Native heading"));
+
+        let list_id = tree.root_children[1];
+        let list_node = tree
+            .nodes
+            .iter()
+            .find(|node| node.id == list_id)
+            .expect("list node");
+        assert_eq!(list_node.role, AccessibilityRole::List);
+        assert_eq!(list_node.children.len(), 2);
+
+        for child_id in &list_node.children {
+            let list_item = tree
+                .nodes
+                .iter()
+                .find(|node| node.id == *child_id)
+                .expect("list item node");
+            assert_eq!(list_item.role, AccessibilityRole::ListItem);
+            assert_eq!(list_item.children.len(), 1);
+        }
     }
 
     #[test]

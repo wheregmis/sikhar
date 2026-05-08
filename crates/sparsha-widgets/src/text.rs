@@ -134,6 +134,23 @@ impl Text {
     fn clips_overflow(&self) -> bool {
         matches!(self.overflow, TextOverflow::Clip | TextOverflow::Ellipsis)
     }
+
+    fn accessibility_info_for_text(&self) -> AccessibilityInfo {
+        match self.variant {
+            TextVariant::Header => AccessibilityInfo::new(AccessibilityRole::Heading)
+                .heading_level(1)
+                .label(self.content.clone()),
+            TextVariant::Subheader => AccessibilityInfo::new(AccessibilityRole::Heading)
+                .heading_level(2)
+                .label(self.content.clone()),
+            TextVariant::Body if self.uses_block_layout() => {
+                AccessibilityInfo::new(AccessibilityRole::Paragraph).label(self.content.clone())
+            }
+            TextVariant::Body | TextVariant::Caption => {
+                AccessibilityInfo::new(AccessibilityRole::Label).label(self.content.clone())
+            }
+        }
+    }
 }
 
 #[bon]
@@ -299,8 +316,7 @@ impl Widget for Text {
     }
 
     fn accessibility_info(&self) -> Option<AccessibilityInfo> {
-        (!self.content.is_empty())
-            .then(|| AccessibilityInfo::new(AccessibilityRole::Label).label(self.content.clone()))
+        (!self.content.is_empty()).then(|| self.accessibility_info_for_text())
     }
 }
 
@@ -400,6 +416,44 @@ mod tests {
         assert_eq!(text.wrap, TextWrap::Word);
         assert_eq!(text.max_lines, Some(2));
         assert_eq!(text.overflow, TextOverflow::Clip);
+    }
+
+    #[test]
+    fn text_variants_map_to_native_first_semantic_roles() {
+        let header = Text::builder()
+            .content("Page title")
+            .variant(TextVariant::Header)
+            .build()
+            .accessibility_info()
+            .expect("header semantics");
+        assert_eq!(header.role, Some(AccessibilityRole::Heading));
+        assert_eq!(header.heading_level, Some(1));
+        assert_eq!(header.label.as_deref(), Some("Page title"));
+
+        let subheader = Text::builder()
+            .content("Section title")
+            .variant(TextVariant::Subheader)
+            .build()
+            .accessibility_info()
+            .expect("subheader semantics");
+        assert_eq!(subheader.role, Some(AccessibilityRole::Heading));
+        assert_eq!(subheader.heading_level, Some(2));
+
+        let paragraph = Text::builder()
+            .content("A longer block")
+            .fill_width(true)
+            .build()
+            .accessibility_info()
+            .expect("paragraph semantics");
+        assert_eq!(paragraph.role, Some(AccessibilityRole::Paragraph));
+
+        let caption = Text::builder()
+            .content("Caption")
+            .variant(TextVariant::Caption)
+            .build()
+            .accessibility_info()
+            .expect("caption semantics");
+        assert_eq!(caption.role, Some(AccessibilityRole::Label));
     }
 
     #[test]

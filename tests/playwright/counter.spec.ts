@@ -16,11 +16,11 @@ test("counter starter paints the Material-style shell and increments", async ({
       .first(),
   ).toBeVisible();
   await expect(
-    page
-      .locator(".sparsha-semantic-root span")
-      .filter({ hasText: "Sparsha Demo Home Page" })
-      .first(),
-  ).toHaveText("Sparsha Demo Home Page");
+    page.getByRole("heading", {
+      name: "Sparsha Demo Home Page",
+      level: 1,
+    }),
+  ).toBeVisible();
   await expect(
     page.getByText("You have pushed the button this many times:", {
       exact: true,
@@ -28,6 +28,11 @@ test("counter starter paints the Material-style shell and increments", async ({
   ).toBeVisible();
   await expect(page.getByText("0", { exact: true }).first()).toBeVisible();
 
-  await page.getByRole("button", { name: "Increment counter" }).click({ force: true });
+  const incrementButton = page.getByRole("button", { name: "Increment counter" });
+  await expect(page.locator(".sparsha-semantic-root button")).toHaveAttribute(
+    "type",
+    "button",
+  );
+  await incrementButton.click({ force: true });
   await expect(page.getByText("1", { exact: true }).first()).toBeVisible();
 });

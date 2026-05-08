@@ -198,6 +198,7 @@ for (const viewport of viewports) {
 
     const virtualList = page.getByRole("list", { name: "Showcase virtualized list" });
     await expect(virtualList).toBeVisible();
+    await expect(virtualList.getByRole("listitem").first()).toBeVisible();
     await expect(page.getByText("Animations", { exact: true }).first()).toBeVisible();
 
     const renderingButton = page.getByRole("button", { name: "Rendering" });

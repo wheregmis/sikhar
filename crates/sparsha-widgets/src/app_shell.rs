@@ -113,7 +113,8 @@ impl Widget for AppBar {
 
     fn accessibility_info(&self) -> Option<AccessibilityInfo> {
         Some(
-            AccessibilityInfo::new(AccessibilityRole::Label)
+            AccessibilityInfo::new(AccessibilityRole::Heading)
+                .heading_level(1)
                 .label(self.title.clone())
                 .hidden(false),
         )
@@ -588,6 +589,9 @@ mod tests {
             bar.accessibility_info().and_then(|info| info.label),
             Some("Hello".into())
         );
+        let info = bar.accessibility_info().expect("app bar semantics");
+        assert_eq!(info.role, Some(AccessibilityRole::Heading));
+        assert_eq!(info.heading_level, Some(1));
     }
 
     #[test]

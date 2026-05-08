@@ -386,9 +386,22 @@ pub(crate) fn create_semantic_element(
     node: &AccessibilityNodeSnapshot,
 ) -> Result<HtmlElement, wasm_bindgen::JsValue> {
     let element = match node.role {
-        AccessibilityRole::Button => document
-            .create_element("button")?
-            .dyn_into::<HtmlElement>()?,
+        AccessibilityRole::Heading => {
+            let level = node.heading_level.unwrap_or(2).clamp(1, 6);
+            document
+                .create_element(&format!("h{level}"))?
+                .dyn_into::<HtmlElement>()?
+        }
+        AccessibilityRole::Paragraph => document.create_element("p")?.dyn_into::<HtmlElement>()?,
+        AccessibilityRole::Link => document.create_element("a")?.dyn_into::<HtmlElement>()?,
+        AccessibilityRole::Image => document.create_element("img")?.dyn_into::<HtmlElement>()?,
+        AccessibilityRole::Button => {
+            let button = document
+                .create_element("button")?
+                .dyn_into::<HtmlElement>()?;
+            button.set_attribute("type", "button")?;
+            button
+        }
         AccessibilityRole::CheckBox => {
             let input = document
                 .create_element("input")?
@@ -413,6 +426,30 @@ pub(crate) fn create_semantic_element(
             textarea.unchecked_into::<HtmlElement>()
         }
         AccessibilityRole::Label => document.create_element("span")?.dyn_into::<HtmlElement>()?,
+        AccessibilityRole::List => document.create_element("ul")?.dyn_into::<HtmlElement>()?,
+        AccessibilityRole::ListItem => document.create_element("li")?.dyn_into::<HtmlElement>()?,
+        AccessibilityRole::Region => document
+            .create_element("section")?
+            .dyn_into::<HtmlElement>()?,
+        AccessibilityRole::Slider => {
+            let input = document
+                .create_element("input")?
+                .dyn_into::<HtmlInputElement>()?;
+            input.set_type("range");
+            if let Some(value) = &node.value {
+                input.set_value(value);
+            }
+            input.unchecked_into::<HtmlElement>()
+        }
+        AccessibilityRole::Progress => {
+            let progress = document
+                .create_element("progress")?
+                .dyn_into::<HtmlElement>()?;
+            if let Some(value) = &node.value {
+                progress.set_attribute("value", value)?;
+            }
+            progress
+        }
         _ => document.create_element("div")?.dyn_into::<HtmlElement>()?,
     };
 
@@ -438,10 +475,21 @@ pub(crate) fn create_semantic_element(
         element.set_attribute("aria-disabled", "true")?;
     }
     if let Some(label) = &node.label {
-        element.set_attribute("aria-label", label)?;
+        match node.role {
+            AccessibilityRole::Image => {
+                element.set_attribute("alt", label)?;
+            }
+            _ => {
+                element.set_attribute("aria-label", label)?;
+            }
+        }
         if matches!(
             node.role,
-            AccessibilityRole::Label | AccessibilityRole::Button
+            AccessibilityRole::Label
+                | AccessibilityRole::Paragraph
+                | AccessibilityRole::Heading
+                | AccessibilityRole::Link
+                | AccessibilityRole::Button
         ) {
             element.set_text_content(Some(label));
         }
@@ -451,17 +499,28 @@ pub(crate) fn create_semantic_element(
     }
     if let Some(value) = &node.value {
         match node.role {
-            AccessibilityRole::Label => element.set_text_content(Some(value)),
+            AccessibilityRole::Label | AccessibilityRole::Paragraph => {
+                element.set_text_content(Some(value))
+            }
             AccessibilityRole::ScrollView => {
                 element.set_attribute("aria-valuetext", value)?;
             }
             AccessibilityRole::GenericContainer | AccessibilityRole::List => {
                 element.set_attribute("aria-label", value)?;
             }
+            AccessibilityRole::Link => {
+                element.set_attribute("href", value)?;
+            }
+            AccessibilityRole::Progress => {
+                element.set_attribute("aria-valuetext", value)?;
+            }
             _ => {}
         }
     }
-    if let Some(checked) = node.checked {
+    if let Some(checked) = node
+        .checked
+        .filter(|_| !matches!(node.role, AccessibilityRole::CheckBox))
+    {
         element.set_attribute("aria-checked", if checked { "true" } else { "false" })?;
     }
 
@@ -472,11 +531,22 @@ pub(crate) fn create_semantic_element(
         AccessibilityRole::List => {
             element.set_attribute("role", "list")?;
         }
-        AccessibilityRole::ScrollView => {
-            element.set_attribute("role", "group")?;
-            element.set_attribute("aria-roledescription", "scroll view")?;
+        AccessibilityRole::Region => {
+            element.set_attribute("role", "region")?;
         }
-        AccessibilityRole::Label => {}
+        AccessibilityRole::ScrollView => {
+            element.set_attribute("role", "region")?;
+            element.set_attribute("aria-roledescription", "scroll view")?;
+            element.set_tab_index(0);
+        }
+        AccessibilityRole::Label
+        | AccessibilityRole::Paragraph
+        | AccessibilityRole::Heading
+        | AccessibilityRole::Link
+        | AccessibilityRole::Image
+        | AccessibilityRole::ListItem
+        | AccessibilityRole::Slider
+        | AccessibilityRole::Progress => {}
         AccessibilityRole::Button
         | AccessibilityRole::CheckBox
         | AccessibilityRole::TextInput
@@ -527,6 +597,27 @@ mod wasm_tests {
             .expect("window document")
     }
 
+    fn semantic_snapshot(
+        role: AccessibilityRole,
+        label: Option<&str>,
+    ) -> AccessibilityNodeSnapshot {
+        AccessibilityNodeSnapshot {
+            id: 99,
+            path: vec![0],
+            role,
+            heading_level: None,
+            label: label.map(str::to_owned),
+            description: None,
+            value: None,
+            hidden: false,
+            disabled: false,
+            checked: None,
+            actions: Vec::new(),
+            bounds: Rect::new(0.0, 0.0, 120.0, 24.0),
+            children: Vec::new(),
+        }
+    }
+
     #[wasm_bindgen_test]
     fn semantic_label_node_uses_text_native_span() {
         let element = create_semantic_element(
@@ -535,6 +626,7 @@ mod wasm_tests {
                 id: 3,
                 path: vec![0],
                 role: AccessibilityRole::Label,
+                heading_level: None,
                 label: Some("Status ready".to_owned()),
                 description: None,
                 value: None,
@@ -564,6 +656,7 @@ mod wasm_tests {
                 id: 4,
                 path: vec![0],
                 role: AccessibilityRole::Button,
+                heading_level: None,
                 label: Some("Submit".to_owned()),
                 description: None,
                 value: None,
@@ -578,6 +671,7 @@ mod wasm_tests {
         .expect("semantic button");
 
         assert_eq!(element.tag_name(), "BUTTON");
+        assert_eq!(element.get_attribute("type").as_deref(), Some("button"));
         assert_eq!(element.text_content().as_deref(), Some("Submit"));
         assert_eq!(
             element.get_attribute("aria-label").as_deref(),
@@ -593,6 +687,7 @@ mod wasm_tests {
                 id: 5,
                 path: vec![0],
                 role: AccessibilityRole::CheckBox,
+                heading_level: None,
                 label: Some("Enable alerts".to_owned()),
                 description: None,
                 value: None,
@@ -609,6 +704,7 @@ mod wasm_tests {
 
         assert_eq!(input.type_(), "checkbox");
         assert!(input.checked());
+        assert_eq!(input.get_attribute("aria-checked"), None);
         assert_eq!(
             input.get_attribute("aria-label").as_deref(),
             Some("Enable alerts")
@@ -623,6 +719,7 @@ mod wasm_tests {
                 id: 7,
                 path: vec![0],
                 role: AccessibilityRole::TextInput,
+                heading_level: None,
                 label: Some("Email".to_owned()),
                 description: None,
                 value: Some("hello@example.com".to_owned()),
@@ -649,6 +746,7 @@ mod wasm_tests {
                 id: 8,
                 path: vec![0],
                 role: AccessibilityRole::MultilineTextInput,
+                heading_level: None,
                 label: Some("Notes".to_owned()),
                 description: None,
                 value: Some("First line\nSecond line".to_owned()),
@@ -670,6 +768,106 @@ mod wasm_tests {
             textarea.get_attribute("aria-label").as_deref(),
             Some("Notes")
         );
+    }
+
+    #[wasm_bindgen_test]
+    fn semantic_text_roles_use_native_text_elements() {
+        let mut heading = semantic_snapshot(AccessibilityRole::Heading, Some("Page title"));
+        heading.heading_level = Some(1);
+        let heading_element = create_semantic_element(&document(), &heading).expect("heading");
+        assert_eq!(heading_element.tag_name(), "H1");
+        assert_eq!(
+            heading_element.text_content().as_deref(),
+            Some("Page title")
+        );
+
+        let paragraph = create_semantic_element(
+            &document(),
+            &semantic_snapshot(AccessibilityRole::Paragraph, Some("Body copy")),
+        )
+        .expect("paragraph");
+        assert_eq!(paragraph.tag_name(), "P");
+        assert_eq!(paragraph.text_content().as_deref(), Some("Body copy"));
+    }
+
+    #[wasm_bindgen_test]
+    fn semantic_structural_roles_use_native_elements() {
+        let list = create_semantic_element(
+            &document(),
+            &semantic_snapshot(AccessibilityRole::List, Some("Results")),
+        )
+        .expect("list");
+        assert_eq!(list.tag_name(), "UL");
+        assert_eq!(list.get_attribute("role").as_deref(), Some("list"));
+        assert_eq!(list.get_attribute("aria-label").as_deref(), Some("Results"));
+
+        let list_item = create_semantic_element(
+            &document(),
+            &semantic_snapshot(AccessibilityRole::ListItem, None),
+        )
+        .expect("list item");
+        assert_eq!(list_item.tag_name(), "LI");
+
+        let region = create_semantic_element(
+            &document(),
+            &semantic_snapshot(AccessibilityRole::Region, Some("Main panel")),
+        )
+        .expect("region");
+        assert_eq!(region.tag_name(), "SECTION");
+        assert_eq!(region.get_attribute("role").as_deref(), Some("region"));
+    }
+
+    #[wasm_bindgen_test]
+    fn semantic_media_and_range_roles_use_native_elements() {
+        let image = create_semantic_element(
+            &document(),
+            &semantic_snapshot(AccessibilityRole::Image, Some("Product photo")),
+        )
+        .expect("image");
+        assert_eq!(image.tag_name(), "IMG");
+        assert_eq!(image.get_attribute("alt").as_deref(), Some("Product photo"));
+
+        let mut link_snapshot = semantic_snapshot(AccessibilityRole::Link, Some("Docs"));
+        link_snapshot.value = Some("https://example.com/docs".to_owned());
+        let link = create_semantic_element(&document(), &link_snapshot).expect("link");
+        assert_eq!(link.tag_name(), "A");
+        assert_eq!(link.text_content().as_deref(), Some("Docs"));
+        assert_eq!(
+            link.get_attribute("href").as_deref(),
+            Some("https://example.com/docs")
+        );
+
+        let mut slider_snapshot = semantic_snapshot(AccessibilityRole::Slider, Some("Volume"));
+        slider_snapshot.value = Some("25".to_owned());
+        let slider = create_semantic_element(&document(), &slider_snapshot).expect("slider");
+        let slider = slider.dyn_into::<HtmlInputElement>().expect("range input");
+        assert_eq!(slider.type_(), "range");
+        assert_eq!(slider.value(), "25");
+
+        let mut progress_snapshot = semantic_snapshot(AccessibilityRole::Progress, Some("Upload"));
+        progress_snapshot.value = Some("0.5".to_owned());
+        let progress = create_semantic_element(&document(), &progress_snapshot).expect("progress");
+        assert_eq!(progress.tag_name(), "PROGRESS");
+        assert_eq!(progress.get_attribute("value").as_deref(), Some("0.5"));
+    }
+
+    #[wasm_bindgen_test]
+    fn semantic_scroll_view_is_focusable_region_without_native_scroll_claim() {
+        let mut snapshot = semantic_snapshot(AccessibilityRole::ScrollView, Some("Activity"));
+        snapshot.value = Some("scroll offset 0 of 100".to_owned());
+        let element = create_semantic_element(&document(), &snapshot).expect("scroll view");
+
+        assert_eq!(element.tag_name(), "DIV");
+        assert_eq!(element.get_attribute("role").as_deref(), Some("region"));
+        assert_eq!(
+            element.get_attribute("aria-label").as_deref(),
+            Some("Activity")
+        );
+        assert_eq!(
+            element.get_attribute("aria-roledescription").as_deref(),
+            Some("scroll view")
+        );
+        assert_eq!(element.tab_index(), 0);
     }
 
     #[wasm_bindgen_test]

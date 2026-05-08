@@ -7,10 +7,18 @@ pub enum AccessibilityRole {
     Button,
     CheckBox,
     Label,
+    Paragraph,
+    Heading,
+    Link,
+    Image,
     TextInput,
     MultilineTextInput,
     List,
+    ListItem,
+    Region,
     ScrollView,
+    Slider,
+    Progress,
 }
 
 /// Accessibility actions that runtimes or assistive technologies can request.
@@ -29,6 +37,7 @@ pub enum AccessibilityAction {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct AccessibilityInfo {
     pub role: Option<AccessibilityRole>,
+    pub heading_level: Option<u8>,
     pub label: Option<String>,
     pub description: Option<String>,
     pub value: Option<String>,
@@ -48,6 +57,11 @@ impl AccessibilityInfo {
 
     pub fn label(mut self, label: impl Into<String>) -> Self {
         self.label = Some(label.into());
+        self
+    }
+
+    pub fn heading_level(mut self, level: u8) -> Self {
+        self.heading_level = Some(level.clamp(1, 6));
         self
     }
 
@@ -85,6 +99,7 @@ impl AccessibilityInfo {
 
     pub fn has_metadata(&self) -> bool {
         self.role.is_some()
+            || self.heading_level.is_some()
             || self.label.is_some()
             || self.description.is_some()
             || self.value.is_some()
