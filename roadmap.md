@@ -121,10 +121,10 @@ Goal: keep `sparsha` app bootstrap thin and move platform-specific behavior behi
 - [x] Add parity tests that assert identical layout outputs for representative widget trees regardless of native/web runtime entrypoint.
 
 ### Phase 2 — Event Boundary (Normalize Platform Input)
-- [ ] Add internal platform event adapters (`platform::events::native`, `platform::events::web`) that translate host events into `sparsha_input::InputEvent`.
-- [ ] Keep `InputEvent` as the canonical cross-platform event model; do not branch on `winit`/`web_sys` types outside adapters.
-- [ ] Move shortcut primary-modifier policy behind an explicit platform policy interface so web/native behavior is deliberate instead of `#[cfg]`-scattered.
-- [ ] Add shared conformance tests that replay the same semantic event sequences (pointer, keyboard, IME/composition, clipboard) through both adapters.
+- [x] Add internal platform event adapters (`platform::events::native`, `platform::events::web`) that translate host events into `sparsha_input::InputEvent`.
+- [x] Keep `InputEvent` as the canonical cross-platform event model; do not branch on `winit`/`web_sys` types outside adapters.
+- [x] Move shortcut primary-modifier policy behind an explicit platform policy interface so web/native behavior is deliberate instead of `#[cfg]`-scattered.
+- [x] Add shared conformance tests that replay the same semantic event sequences (pointer, keyboard, IME/composition, clipboard) through both adapters.
 
 ### Phase 3 — Drawing Boundary (Backend Interface)
 - [ ] Define a rendering backend trait in runtime internals (for example `PlatformDrawBackend`) that consumes `DrawList` frames plus viewport/background metadata.

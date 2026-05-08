@@ -30,7 +30,7 @@ use crate::tasks::{TaskRuntime, TaskStatus};
 #[cfg(not(target_arch = "wasm32"))]
 use sparsha_core::{init_wgpu, SurfaceState};
 #[cfg(not(target_arch = "wasm32"))]
-use sparsha_input::{FocusManager, InputEvent, Modifiers, PointerButton};
+use sparsha_input::{FocusManager, InputEvent, Modifiers};
 #[cfg(not(target_arch = "wasm32"))]
 use sparsha_layout::LayoutTree;
 #[cfg(not(target_arch = "wasm32"))]
@@ -973,18 +973,21 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                 }
             }
             WindowEvent::CursorMoved { position, .. } => {
-                let pos = if let Some(state) = self.state.as_mut() {
-                    let pos = state.platform.event_translator().cursor_position(
+                let translated = if let Some(state) = self.state.as_mut() {
+                    let translated = state.platform.event_translator().translate_cursor_moved(
                         position.x as f32,
                         position.y as f32,
                         state.scale_factor,
                     );
+                    let pos = translated.pos().unwrap_or_default();
                     state.mouse_pos = pos;
-                    pos
+                    Some(translated)
                 } else {
-                    glam::Vec2::ZERO
+                    None
                 };
-                self.handle_event(InputEvent::PointerMove { pos });
+                if let Some(input_event) = translated {
+                    self.handle_event(input_event);
+                }
             }
             WindowEvent::MouseInput {
                 state: btn_state,
@@ -992,39 +995,30 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                 ..
             } => {
                 let pos = self.state.as_ref().map(|s| s.mouse_pos).unwrap_or_default();
-                let button = self
-                    .state
-                    .as_ref()
-                    .map(|state| state.platform.event_translator().map_mouse_button(button))
-                    .unwrap_or(PointerButton::Primary);
-
-                match btn_state {
-                    winit::event::ElementState::Pressed => {
-                        self.handle_event(InputEvent::PointerDown { pos, button });
-                    }
-                    winit::event::ElementState::Released => {
-                        self.handle_event(InputEvent::PointerUp { pos, button });
-                    }
+                if let Some(input_event) = self.state.as_ref().map(|state| {
+                    state
+                        .platform
+                        .event_translator()
+                        .translate_mouse_input(pos, button, btn_state)
+                }) {
+                    self.handle_event(input_event);
                 }
             }
             WindowEvent::MouseWheel { delta, .. } => {
                 let pos = self.state.as_ref().map(|s| s.mouse_pos).unwrap_or_default();
-                let delta = match delta {
-                    winit::event::MouseScrollDelta::LineDelta(x, y) => glam::Vec2::new(x, y),
-                    winit::event::MouseScrollDelta::PixelDelta(p) => {
-                        glam::Vec2::new(p.x as f32 / 20.0, p.y as f32 / 20.0)
-                    }
-                };
                 let modifiers = self
                     .state
                     .as_ref()
                     .map(|state| state.modifiers)
                     .unwrap_or_default();
-                self.handle_event(InputEvent::Scroll {
-                    pos,
-                    delta,
-                    modifiers,
-                });
+                if let Some(input_event) = self.state.as_ref().map(|state| {
+                    state
+                        .platform
+                        .event_translator()
+                        .translate_mouse_wheel(pos, delta, modifiers)
+                }) {
+                    self.handle_event(input_event);
+                }
             }
             WindowEvent::ModifiersChanged(modifiers) => {
                 if let Some(state) = self.state.as_mut() {
@@ -1092,13 +1086,25 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                             state.focused_text_editor_state().is_some(),
                         );
                     }
-                    self.handle_event(InputEvent::FocusGained);
+                    if let Some(input_event) = self
+                        .state
+                        .as_ref()
+                        .map(|state| state.platform.event_translator().translate_focus(true))
+                    {
+                        self.handle_event(input_event);
+                    }
                 } else {
                     if let Some(state) = self.state.as_mut() {
                         state.ime_composing = false;
                         set_native_ime_allowed(state.window, false);
                     }
-                    self.handle_event(InputEvent::FocusLost);
+                    if let Some(input_event) = self
+                        .state
+                        .as_ref()
+                        .map(|state| state.platform.event_translator().translate_focus(false))
+                    {
+                        self.handle_event(input_event);
+                    }
                 }
             }
             WindowEvent::RedrawRequested => {

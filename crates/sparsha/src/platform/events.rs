@@ -1,9 +1,7 @@
 use crate::platform::{PlatformId, PlatformId::Web};
-#[cfg(not(target_arch = "wasm32"))]
-use sparsha_input::shortcuts;
 use sparsha_input::{
-    Action, ActionMapper, InputEvent, Key, KeyboardEvent, Modifiers, NamedKey, PointerButton,
-    ShortcutProfile, StandardAction,
+    shortcuts, Action, ActionMapper, InputEvent, Key, KeyboardEvent, Modifiers, NamedKey,
+    PointerButton, ShortcutProfile, StandardAction,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -11,8 +9,50 @@ use winit::event::{ElementState, Ime, MouseButton};
 
 pub(crate) trait PlatformEventTranslator {
     fn platform_id(&self) -> PlatformId;
-    fn shortcut_profile(&self) -> ShortcutProfile {
-        self.platform_id().shortcut_profile()
+    fn shortcut_policy(&self) -> PlatformShortcutPolicy {
+        PlatformShortcutPolicy::for_platform(self.platform_id())
+    }
+}
+
+#[allow(unused_imports)]
+pub(crate) mod native {
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) use super::NativeEventTranslator as EventTranslator;
+}
+
+#[allow(unused_imports)]
+pub(crate) mod web {
+    pub(crate) use super::WebEventTranslator as EventTranslator;
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct PlatformShortcutPolicy {
+    profile: ShortcutProfile,
+}
+
+impl PlatformShortcutPolicy {
+    pub(crate) const fn for_platform(platform_id: PlatformId) -> Self {
+        Self {
+            profile: platform_id.shortcut_profile(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(crate) const fn shortcut_profile(self) -> ShortcutProfile {
+        self.profile
+    }
+
+    #[allow(dead_code)]
+    pub(crate) const fn primary_modifiers(self) -> Modifiers {
+        self.profile.primary_modifiers()
+    }
+
+    pub(crate) fn primary_modifier_active(self, modifiers: Modifiers) -> bool {
+        shortcuts::primary_modifier_for(self.profile, modifiers)
+    }
+
+    fn action_mapper(self) -> ActionMapper {
+        ActionMapper::with_shortcut_profile(self.profile)
     }
 }
 
@@ -45,6 +85,55 @@ impl NativeEventTranslator {
             MouseButton::Right => PointerButton::Secondary,
             MouseButton::Middle => PointerButton::Auxiliary,
             _ => PointerButton::Primary,
+        }
+    }
+
+    pub(crate) fn translate_cursor_moved(&self, x: f32, y: f32, scale_factor: f32) -> InputEvent {
+        self.translate_pointer_move(self.cursor_position(x, y, scale_factor))
+    }
+
+    pub(crate) fn translate_pointer_move(&self, pos: glam::Vec2) -> InputEvent {
+        InputEvent::PointerMove { pos }
+    }
+
+    pub(crate) fn translate_mouse_input(
+        &self,
+        pos: glam::Vec2,
+        button: MouseButton,
+        state: ElementState,
+    ) -> InputEvent {
+        let button = self.map_mouse_button(button);
+        if state.is_pressed() {
+            InputEvent::PointerDown { pos, button }
+        } else {
+            InputEvent::PointerUp { pos, button }
+        }
+    }
+
+    pub(crate) fn translate_mouse_wheel(
+        &self,
+        pos: glam::Vec2,
+        delta: winit::event::MouseScrollDelta,
+        modifiers: Modifiers,
+    ) -> InputEvent {
+        let delta = match delta {
+            winit::event::MouseScrollDelta::LineDelta(x, y) => glam::Vec2::new(x, y),
+            winit::event::MouseScrollDelta::PixelDelta(p) => {
+                glam::Vec2::new(p.x as f32 / 20.0, p.y as f32 / 20.0)
+            }
+        };
+        InputEvent::Scroll {
+            pos,
+            delta,
+            modifiers,
+        }
+    }
+
+    pub(crate) fn translate_focus(&self, focused: bool) -> InputEvent {
+        if focused {
+            InputEvent::FocusGained
+        } else {
+            InputEvent::FocusLost
         }
     }
 
@@ -94,7 +183,7 @@ impl NativeEventTranslator {
     pub(crate) fn should_emit_text(&self, text: &str, modifiers: Modifiers) -> bool {
         !text.is_empty()
             && text.chars().all(|ch| !ch.is_control())
-            && !shortcuts::primary_modifier_for(self.shortcut_profile(), modifiers)
+            && !self.shortcut_policy().primary_modifier_active(modifiers)
             && !modifiers.alt()
     }
 
@@ -234,6 +323,59 @@ impl WebEventTranslator {
         }
     }
 
+    pub(crate) fn translate_pointer_move(&self, pos: glam::Vec2) -> InputEvent {
+        InputEvent::PointerMove { pos }
+    }
+
+    pub(crate) fn translate_pointer_down(&self, pos: glam::Vec2, button: i16) -> InputEvent {
+        InputEvent::PointerDown {
+            pos,
+            button: self.map_mouse_button(button),
+        }
+    }
+
+    pub(crate) fn translate_pointer_up(&self, pos: glam::Vec2, button: i16) -> InputEvent {
+        InputEvent::PointerUp {
+            pos,
+            button: self.map_mouse_button(button),
+        }
+    }
+
+    pub(crate) fn translate_primary_pointer_down(&self, pos: glam::Vec2) -> InputEvent {
+        InputEvent::PointerDown {
+            pos,
+            button: PointerButton::Primary,
+        }
+    }
+
+    pub(crate) fn translate_primary_pointer_up(&self, pos: glam::Vec2) -> InputEvent {
+        InputEvent::PointerUp {
+            pos,
+            button: PointerButton::Primary,
+        }
+    }
+
+    pub(crate) fn translate_scroll(
+        &self,
+        pos: glam::Vec2,
+        delta: glam::Vec2,
+        modifiers: Modifiers,
+    ) -> InputEvent {
+        InputEvent::Scroll {
+            pos,
+            delta,
+            modifiers,
+        }
+    }
+
+    pub(crate) fn translate_focus(&self, focused: bool) -> InputEvent {
+        if focused {
+            InputEvent::FocusGained
+        } else {
+            InputEvent::FocusLost
+        }
+    }
+
     fn is_plain_printable_key(&self, key: &str, ctrl: bool, alt: bool, meta: bool) -> bool {
         key.chars().count() == 1 && !ctrl && !alt && !meta
     }
@@ -307,11 +449,11 @@ impl WebEventTranslator {
         });
 
         let mapped_action = keyboard_event.as_ref().and_then(|event| {
-            ActionMapper::with_shortcut_profile(self.shortcut_profile()).map_event(
-                &InputEvent::KeyDown {
+            self.shortcut_policy()
+                .action_mapper()
+                .map_event(&InputEvent::KeyDown {
                     event: event.clone(),
-                },
-            )
+                })
         });
 
         let prevent_default = if focused_text_editor {
@@ -510,5 +652,156 @@ mod tests {
             dispatch.text_event,
             Some(InputEvent::TextInput { text }) if text == " "
         ));
+    }
+
+    #[test]
+    fn shortcut_policy_makes_primary_modifier_explicit() {
+        let web = PlatformShortcutPolicy::for_platform(PlatformId::Web);
+        assert_eq!(web.shortcut_profile(), ShortcutProfile::CommandPrimary);
+        assert_eq!(web.primary_modifiers(), Modifiers::META);
+        assert!(web.primary_modifier_active(Modifiers::META));
+        assert!(!web.primary_modifier_active(Modifiers::CONTROL));
+
+        let linux = PlatformShortcutPolicy::for_platform(PlatformId::Linux);
+        assert_eq!(linux.shortcut_profile(), ShortcutProfile::ControlPrimary);
+        assert_eq!(linux.primary_modifiers(), Modifiers::CONTROL);
+        assert!(linux.primary_modifier_active(Modifiers::CONTROL));
+        assert!(!linux.primary_modifier_active(Modifiers::META));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn native_and_web_adapters_share_pointer_scroll_and_focus_semantics() {
+        let native = NativeEventTranslator::new(PlatformId::Linux);
+        let web = WebEventTranslator::new();
+        let pos = glam::Vec2::new(12.0, 24.0);
+
+        assert!(matches!(
+            native.translate_pointer_move(pos),
+            InputEvent::PointerMove { pos: observed } if observed == pos
+        ));
+        assert!(matches!(
+            web.translate_pointer_move(pos),
+            InputEvent::PointerMove { pos: observed } if observed == pos
+        ));
+        assert!(matches!(
+            native.translate_mouse_input(pos, MouseButton::Left, ElementState::Pressed),
+            InputEvent::PointerDown {
+                pos: observed,
+                button: PointerButton::Primary,
+            } if observed == pos
+        ));
+        assert!(matches!(
+            web.translate_pointer_down(pos, 0),
+            InputEvent::PointerDown {
+                pos: observed,
+                button: PointerButton::Primary,
+            } if observed == pos
+        ));
+
+        let modifiers = Modifiers::SHIFT;
+        assert!(matches!(
+            native.translate_mouse_wheel(
+                pos,
+                winit::event::MouseScrollDelta::LineDelta(1.0, -2.0),
+                modifiers,
+            ),
+            InputEvent::Scroll {
+                pos: observed_pos,
+                delta,
+                modifiers: observed_modifiers,
+            } if observed_pos == pos
+                && delta == glam::Vec2::new(1.0, -2.0)
+                && observed_modifiers == modifiers
+        ));
+        assert!(matches!(
+            web.translate_scroll(pos, glam::Vec2::new(1.0, -2.0), modifiers),
+            InputEvent::Scroll {
+                pos: observed_pos,
+                delta,
+                modifiers: observed_modifiers,
+            } if observed_pos == pos
+                && delta == glam::Vec2::new(1.0, -2.0)
+                && observed_modifiers == modifiers
+        ));
+
+        assert!(matches!(
+            native.translate_focus(true),
+            InputEvent::FocusGained
+        ));
+        assert!(matches!(web.translate_focus(true), InputEvent::FocusGained));
+        assert!(matches!(
+            native.translate_focus(false),
+            InputEvent::FocusLost
+        ));
+        assert!(matches!(web.translate_focus(false), InputEvent::FocusLost));
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    #[test]
+    fn native_and_web_adapters_share_keyboard_composition_and_clipboard_semantics() {
+        let native = NativeEventTranslator::new(PlatformId::MacOs);
+        let web = WebEventTranslator::new();
+
+        let native_key = native.translate_keyboard(
+            &winit::keyboard::Key::Character("a"),
+            ElementState::Pressed,
+            Modifiers::empty(),
+            false,
+            Some("a"),
+        );
+        let web_key = web.translate_key_down("a", false, false, false, false, false);
+        assert!(matches!(
+            native_key.keyboard_event,
+            Some(InputEvent::KeyDown { .. })
+        ));
+        assert!(matches!(
+            web_key.keyboard_event,
+            Some(InputEvent::KeyDown { .. })
+        ));
+        assert!(matches!(
+            native_key.text_event,
+            Some(InputEvent::TextInput { text }) if text == "a"
+        ));
+        assert!(matches!(
+            web_key.text_event,
+            Some(InputEvent::TextInput { text }) if text == "a"
+        ));
+
+        let native_composition =
+            native.translate_ime(&winit::event::Ime::Preedit("ka".to_owned(), None), false);
+        assert_eq!(native_composition.len(), 2);
+        assert!(matches!(
+            native_composition[0],
+            InputEvent::CompositionStart
+        ));
+        assert!(matches!(
+            &native_composition[1],
+            InputEvent::CompositionUpdate { text } if text == "ka"
+        ));
+        assert!(matches!(
+            web.translate_composition_start(false, true),
+            Some(InputEvent::CompositionStart)
+        ));
+        assert!(matches!(
+            web.translate_composition_update("ka".to_owned(), false, true),
+            Some(InputEvent::CompositionUpdate { text }) if text == "ka"
+        ));
+        assert!(matches!(
+            native.translate_ime(&winit::event::Ime::Commit("क".to_owned()), true).as_slice(),
+            [InputEvent::CompositionEnd { text }] if text == "क"
+        ));
+        assert!(matches!(
+            web.translate_composition_end("क".to_owned(), false, true),
+            Some(InputEvent::CompositionEnd { text }) if text == "क"
+        ));
+
+        assert!(matches!(
+            web.translate_paste(Some("clip".to_owned()), true),
+            Some(InputEvent::Paste { text }) if text == "clip"
+        ));
+        assert!(web
+            .translate_paste(Some("clip".to_owned()), false)
+            .is_none());
     }
 }

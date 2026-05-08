@@ -712,7 +712,8 @@ fn install_event_listeners(
             let pos = mouse_pos(&root_for_event, &event);
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerMove { pos });
+            let input_event = state_ref.event_translator().translate_pointer_move(pos);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -733,14 +734,13 @@ fn install_event_listeners(
         let root_for_event = target.clone();
         let on_down = Closure::wrap(Box::new(move |event: MouseEvent| {
             let pos = mouse_pos(&root_for_event, &event);
-            let button = state
-                .borrow()
-                .event_translator()
-                .map_mouse_button(event.button());
             root_for_event.focus().ok();
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerDown { pos, button });
+            let input_event = state_ref
+                .event_translator()
+                .translate_pointer_down(pos, event.button());
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -770,10 +770,10 @@ fn install_event_listeners(
             }
             state_ref.active_touch_id = Some(touch_id);
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerDown {
-                pos,
-                button: PointerButton::Primary,
-            });
+            let input_event = state_ref
+                .event_translator()
+                .translate_primary_pointer_down(pos);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -799,13 +799,12 @@ fn install_event_listeners(
                 return;
             }
             let pos = mouse_pos(&root_for_event, &event);
-            let button = state
-                .borrow()
-                .event_translator()
-                .map_mouse_button(event.button());
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerUp { pos, button });
+            let input_event = state_ref
+                .event_translator()
+                .translate_pointer_up(pos, event.button());
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -830,7 +829,8 @@ fn install_event_listeners(
             let pos = mouse_pos(&root_for_event, &event);
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerMove { pos });
+            let input_event = state_ref.event_translator().translate_pointer_move(pos);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -863,16 +863,17 @@ fn install_event_listeners(
             let mut state_ref = state.borrow_mut();
             let previous_pos = state_ref.mouse_pos;
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerMove { pos });
+            let input_event = state_ref.event_translator().translate_pointer_move(pos);
+            state_ref.handle_event(input_event);
             let delta = glam::Vec2::new(
                 (pos.x - previous_pos.x) / WEB_SCROLL_DELTA_UNIT,
                 (pos.y - previous_pos.y) / WEB_SCROLL_DELTA_UNIT,
             );
-            state_ref.handle_event(InputEvent::Scroll {
-                pos,
-                delta,
-                modifiers: Modifiers::default(),
-            });
+            let input_event =
+                state_ref
+                    .event_translator()
+                    .translate_scroll(pos, delta, Modifiers::default());
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -904,7 +905,8 @@ fn install_event_listeners(
             };
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerMove { pos });
+            let input_event = state_ref.event_translator().translate_pointer_move(pos);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -930,13 +932,12 @@ fn install_event_listeners(
                 return;
             }
             let pos = mouse_pos(&root_for_event, &event);
-            let button = state
-                .borrow()
-                .event_translator()
-                .map_mouse_button(event.button());
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerUp { pos, button });
+            let input_event = state_ref
+                .event_translator()
+                .translate_pointer_up(pos, event.button());
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -967,10 +968,10 @@ fn install_event_listeners(
             };
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerUp {
-                pos,
-                button: PointerButton::Primary,
-            });
+            let input_event = state_ref
+                .event_translator()
+                .translate_primary_pointer_up(pos);
+            state_ref.handle_event(input_event);
             state_ref.active_touch_id = None;
             clear_touch_hover(&mut state_ref, &root_for_event);
             let should_schedule = state_ref.should_schedule_frame();
@@ -1004,10 +1005,10 @@ fn install_event_listeners(
             };
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerUp {
-                pos,
-                button: PointerButton::Primary,
-            });
+            let input_event = state_ref
+                .event_translator()
+                .translate_primary_pointer_up(pos);
+            state_ref.handle_event(input_event);
             state_ref.active_touch_id = None;
             clear_touch_hover(&mut state_ref, &root_for_event);
             let should_schedule = state_ref.should_schedule_frame();
@@ -1040,10 +1041,10 @@ fn install_event_listeners(
             let mut state_ref = state.borrow_mut();
             state_ref.active_touch_id = None;
             state_ref.mouse_pos = pos;
-            state_ref.handle_event(InputEvent::PointerUp {
-                pos,
-                button: PointerButton::Primary,
-            });
+            let input_event = state_ref
+                .event_translator()
+                .translate_primary_pointer_up(pos);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -1078,11 +1079,12 @@ fn install_event_listeners(
                 event.meta_key(),
             );
             let mut state_ref = state.borrow_mut();
-            state_ref.handle_event(InputEvent::Scroll {
+            let input_event = state_ref.event_translator().translate_scroll(
                 pos,
-                delta: glam::Vec2::new(delta_x, delta_y),
+                glam::Vec2::new(delta_x, delta_y),
                 modifiers,
-            });
+            );
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -1404,7 +1406,8 @@ fn install_event_listeners(
             let Ok(mut state_ref) = state.try_borrow_mut() else {
                 return;
             };
-            state_ref.handle_event(InputEvent::FocusGained);
+            let input_event = state_ref.event_translator().translate_focus(true);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -1424,7 +1427,8 @@ fn install_event_listeners(
             let Ok(mut state_ref) = state.try_borrow_mut() else {
                 return;
             };
-            state_ref.handle_event(InputEvent::FocusLost);
+            let input_event = state_ref.event_translator().translate_focus(false);
+            state_ref.handle_event(input_event);
             let should_schedule = state_ref.should_schedule_frame();
             drop(state_ref);
             if should_schedule {
@@ -1719,7 +1723,8 @@ fn touch_outside_pos(root: &web_sys::HtmlElement) -> glam::Vec2 {
 fn clear_touch_hover(state: &mut WebAppState, root: &web_sys::HtmlElement) {
     let pos = touch_outside_pos(root);
     state.mouse_pos = pos;
-    state.handle_event(InputEvent::PointerMove { pos });
+    let input_event = state.event_translator().translate_pointer_move(pos);
+    state.handle_event(input_event);
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
