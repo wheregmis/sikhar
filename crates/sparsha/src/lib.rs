@@ -21,9 +21,14 @@
 //!         .theme(Theme::light())
 //!         .router(
 //!             Router::builder()
-//!                 .routes(vec![Route::new("/", || {
+//!                 .routes([Route::new("/", || {
 //!                     Container::column()
-//!                         .child(Button::builder().label("Click me!").build())
+//!                         .child(
+//!                             Button::builder()
+//!                                 .label("Click me!")
+//!                                 .variant(ButtonVariant::Primary)
+//!                                 .build(),
+//!                         )
 //!                 })])
 //!                 .fallback("/")
 //!                 .build(),
@@ -72,11 +77,11 @@ pub use component::{component, Component, ComponentContext, TaskHook};
 pub use router::{hash_to_path, path_to_hash, Navigator, Route, Router, RouterTransition};
 pub use sparsha_widgets::{
     current_theme, current_viewport, lerp_color, AccessibilityAction, AccessibilityInfo,
-    AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, Center, CrossAxisAlignment,
-    Expanded, FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget, MainAxisAlignment,
-    Padding, Positioned, Provider, Scaffold, Semantics, SizedBox, Spacer, Stack, TextArea,
-    TextEditorState, TextInput, TextOverflow, TextWrap, Theme, Tween, ViewportClass, ViewportInfo,
-    ViewportOrientation, WidgetChildMode,
+    AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, ButtonVariant, Center,
+    CrossAxisAlignment, Expanded, FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget,
+    MainAxisAlignment, Padding, Positioned, Provider, Scaffold, Semantics, SizedBox, Spacer, Stack,
+    TextArea, TextEditorState, TextInput, TextOverflow, TextWrap, Theme, Tween, ViewportClass,
+    ViewportInfo, ViewportOrientation, WidgetChildMode,
 };
 pub use tasks::{
     Generation, TaskHandle, TaskId, TaskKey, TaskPayload, TaskPolicy, TaskResult,
@@ -102,13 +107,13 @@ pub mod prelude {
     pub use sparsha_signals::{Effect, Memo, ReadSignal, Signal, WriteSignal};
     pub use sparsha_widgets::{
         current_theme, current_viewport, lerp_color, AccessibilityAction, AccessibilityInfo,
-        AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, BuildContext, Button, Center,
-        Checkbox, Container, CrossAxisAlignment, DrawSurface, EventCommands, Expanded,
-        FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget, List, ListDirection,
-        MainAxisAlignment, Padding, Positioned, Provider, Scaffold, Scroll, ScrollDirection,
-        Semantics, SizedBox, Spacer, Stack, Text, TextAlign, TextArea, TextEditorState, TextInput,
-        TextOverflow, TextVariant, TextWrap, Theme, Tween, ViewportClass, ViewportInfo,
-        ViewportOrientation, Widget, WidgetChildMode,
+        AccessibilityRole, Align, Alignment, AnimationEasing, AppBar, BuildContext, Button,
+        ButtonVariant, Center, Checkbox, Container, CrossAxisAlignment, DrawSurface, EventCommands,
+        Expanded, FloatingActionButton, ForEach, ImplicitAnimation, IntoWidget, List,
+        ListDirection, MainAxisAlignment, Padding, Positioned, Provider, Scaffold, Scroll,
+        ScrollDirection, Semantics, SizedBox, Spacer, Stack, Text, TextAlign, TextArea,
+        TextEditorState, TextInput, TextOverflow, TextVariant, TextWrap, Theme, Tween,
+        ViewportClass, ViewportInfo, ViewportOrientation, Widget, WidgetChildMode,
     };
 }
 

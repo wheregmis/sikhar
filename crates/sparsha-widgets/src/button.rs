@@ -22,6 +22,15 @@ pub enum ButtonState {
     Disabled,
 }
 
+/// Theme-backed button style variant.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ButtonVariant {
+    #[default]
+    Primary,
+    Secondary,
+    Danger,
+}
+
 /// Style configuration for a button.
 #[derive(Clone, Debug)]
 pub struct ButtonStyle {
@@ -69,6 +78,7 @@ pub struct Button {
     id: WidgetId,
     label: String,
     style_override: Option<ButtonStyle>,
+    variant: ButtonVariant,
     background_override: Option<Color>,
     text_color_override: Option<Color>,
     corner_radius_override: Option<f32>,
@@ -83,6 +93,7 @@ impl Button {
             id: WidgetId::default(),
             label,
             style_override: None,
+            variant: ButtonVariant::Primary,
             background_override: None,
             text_color_override: None,
             corner_radius_override: None,
@@ -110,16 +121,36 @@ impl Button {
         }
     }
 
-    fn themed_default_style() -> ButtonStyle {
+    fn themed_default_style_for(variant: ButtonVariant) -> ButtonStyle {
         let theme = current_theme();
         let controls = responsive_theme_controls(&theme);
         let typography = responsive_typography(&theme);
+        let (background, background_hovered, background_pressed, text_color) = match variant {
+            ButtonVariant::Primary => (
+                theme.primary_color(),
+                theme.primary_hovered_color(),
+                theme.primary_pressed_color(),
+                theme.text_on_primary_color(),
+            ),
+            ButtonVariant::Secondary => (
+                theme.surface_variant_color(),
+                theme.background_color(),
+                theme.surface_done_color(),
+                theme.text_color(),
+            ),
+            ButtonVariant::Danger => (
+                theme.error_color(),
+                theme.error_hovered_color(),
+                theme.error_pressed_color(),
+                theme.text_on_primary_color(),
+            ),
+        };
         ButtonStyle {
-            background: theme.primary_color(),
-            background_hovered: theme.primary_hovered_color(),
-            background_pressed: theme.primary_pressed_color(),
+            background,
+            background_hovered,
+            background_pressed,
             background_disabled: theme.disabled_color(),
-            text_color: theme.text_on_primary_color(),
+            text_color,
             text_color_disabled: theme.muted_text_color(),
             border_color: Color::TRANSPARENT,
             border_width: 0.0,
@@ -136,7 +167,7 @@ impl Button {
         let mut style = self
             .style_override
             .clone()
-            .unwrap_or_else(Self::themed_default_style);
+            .unwrap_or_else(|| Self::themed_default_style_for(self.variant));
 
         if let Some(background) = self.background_override {
             style.background = background;
@@ -188,6 +219,7 @@ impl Button {
     fn builder_init(
         #[builder(into)] label: String,
         style: Option<ButtonStyle>,
+        #[builder(default)] variant: ButtonVariant,
         background: Option<Color>,
         text_color: Option<Color>,
         corner_radius: Option<f32>,
@@ -199,6 +231,7 @@ impl Button {
         if let Some(style) = style {
             button = button.style_override(style);
         }
+        button.variant = variant;
         button.background_override = background;
         button.text_color_override = text_color;
         button.corner_radius_override = corner_radius;

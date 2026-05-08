@@ -42,6 +42,7 @@ Notable current behavior:
 - Default widget sizing and focus-ring behavior are aligned through the shared `Theme`
 - Semantic layout helpers cover common structure without dropping to raw flex settings: `Center`, `Padding`, `Expanded`, `Stack`, `Positioned`, `Align`, `SizedBox`, and `Spacer`
 - Paragraph text layout stays on the `Text` builder surface through `line_height(...)`, `fill_width(...)`, `wrap(TextWrap::Word)`, `max_lines(...)`, and overflow policies such as `TextOverflow::Clip` and `TextOverflow::Ellipsis`
+- Common button treatments stay on the `Button` builder surface through `variant(ButtonVariant::Primary)`, `variant(ButtonVariant::Secondary)`, and `variant(ButtonVariant::Danger)`
 - Normal app screens can be authored as bon-backed function components via `component().render(...).call()` and `ComponentContext`
 - Subtree-scoped typed values can be provided with `Provider::new(...)` and read in components via `cx.use_context::<T>()`, `cx.use_context_or(...)`, or `cx.use_context_or_else(...)`
 - Built-in framework resources stay on dedicated component accessors such as `cx.viewport()`, `cx.navigator()`, and `cx.task_runtime()`
@@ -83,7 +84,7 @@ fn main() -> Result<(), sparsha::AppRunError> {
         .theme(Theme::light())
         .router(
             Router::builder()
-                .routes(vec![Route::new("/", || {
+                .routes([Route::new("/", || {
                     Container::column()
                         .fill()
                         .main_axis_alignment(MainAxisAlignment::Center)
@@ -97,7 +98,12 @@ fn main() -> Result<(), sparsha::AppRunError> {
                                 .overflow(TextOverflow::Ellipsis)
                                 .build(),
                         )
-                        .child(Button::builder().label("Click me").build())
+                        .child(
+                            Button::builder()
+                                .label("Click me")
+                                .variant(ButtonVariant::Primary)
+                                .build(),
+                        )
                         .child(
                             TextInput::builder()
                                 .placeholder("Type here...")

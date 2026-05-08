@@ -155,7 +155,7 @@ impl Router {
         state_mod(vis = "pub")
     )]
     fn builder_init(
-        #[builder(default = bon::vec![])] routes: Vec<Route>,
+        #[builder(default = bon::vec![], with = <_>::from_iter)] routes: Vec<Route>,
         #[builder(into, setters(name = fallback))] fallback_path: Option<String>,
         transition: Option<RouterTransition>,
     ) -> Self {

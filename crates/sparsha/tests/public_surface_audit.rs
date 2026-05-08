@@ -290,6 +290,7 @@ fn shipped_surface_documents_the_bon_authoring_paths() {
     assert!(readme.contains("component().render(...).call()"));
     assert!(readme.contains("App::builder()"));
     assert!(readme.contains("Router::builder()"));
+    assert!(readme.contains(".routes([Route::new("));
     assert!(readme.contains("Theme::light()"));
     assert!(readme.contains(".brand(Color::from_hex"));
     assert!(readme.contains(".control_padding("));
@@ -308,6 +309,7 @@ fn shipped_surface_documents_the_bon_authoring_paths() {
     assert!(api_surface.contains("task_runtime()"));
     assert!(api_surface.contains("Semantics::new(...)"));
     assert!(api_surface.contains("List::virtualized_builder()"));
+    assert!(api_surface.contains("Button::builder().variant(ButtonVariant::Secondary)"));
     assert!(api_surface.contains("TextVariant::Header"));
     assert!(api_surface.contains("line_height(...)"));
     assert!(api_surface.contains("TextWrap"));
@@ -328,9 +330,11 @@ fn shipped_surface_documents_the_bon_authoring_paths() {
     ));
     assert!(component_module.contains("self.build.context::<T>()"));
     assert!(widgets_lib.contains("pub use provider::Provider;"));
+    assert!(widgets_lib.contains("ButtonVariant"));
     assert!(widgets_lib.contains("CrossAxisAlignment"));
     assert!(widgets_lib.contains("MainAxisAlignment"));
     assert!(readme.contains("Button::builder()"));
+    assert!(readme.contains("variant(ButtonVariant::Primary)"));
     assert!(readme.contains("Provider::new("));
     assert!(readme.contains("line_height(...)"));
     assert!(readme.contains("TextWrap::Word"));

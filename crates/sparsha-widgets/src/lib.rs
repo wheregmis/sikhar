@@ -34,7 +34,7 @@ pub use animation::{lerp_color, AnimationEasing, ImplicitAnimation, Tween};
 pub use app_shell::{AppBar, FloatingActionButton, Scaffold};
 #[doc(hidden)]
 pub use button::ButtonStyle;
-pub use button::{Button, ButtonState};
+pub use button::{Button, ButtonState, ButtonVariant};
 pub use checkbox::Checkbox;
 #[doc(hidden)]
 pub use checkbox::CheckboxStyle;

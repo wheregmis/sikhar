@@ -61,7 +61,7 @@ fn bon_app_and_router_builders_compile_from_the_public_crate_root() {
             .theme(theme)
             .router(
                 Router::builder()
-                    .routes(vec![Route::new("/", || {
+                    .routes([Route::new("/", || {
                         component()
                             .render(|_| Text::builder().content("home").build())
                             .call()
@@ -101,6 +101,7 @@ fn semantic_structural_widget_surface_compiles_from_the_public_crate_root() {
                     .child(
                         Button::builder()
                             .label("save")
+                            .variant(ButtonVariant::Secondary)
                             .disabled(false)
                             .on_click(|| {})
                             .build(),

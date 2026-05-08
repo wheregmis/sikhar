@@ -21,31 +21,13 @@ fn main() -> Result<(), sparsha::AppRunError> {
         .theme_mode(theme_mode)
         .router(
             Router::builder()
-                .routes(vec![
+                .routes([
                     Route::new("/", move || {
-                        Provider::new(
-                            TodoPageTitle("Todo"),
-                            Provider::new(
-                                TodoPageSubtitle(
-                                    "Sparsha native + web example using signal-driven state.",
-                                ),
-                                component()
-                                    .render(move |cx| todo_app(cx, theme_mode))
-                                    .call(),
-                            ),
-                        )
+                        component()
+                            .render(move |cx| todo_app(cx, theme_mode))
+                            .call()
                     }),
-                    Route::new("/about", || {
-                        Provider::new(
-                            TodoPageTitle("About Todo"),
-                            Provider::new(
-                                TodoPageSubtitle(
-                                    "This example stays intentionally small: one task screen, one about route, shared theme state, and the same component code on native and web.",
-                                ),
-                                component().render(todo_about).call(),
-                            ),
-                        )
-                    }),
+                    Route::new("/about", || component().render(todo_about).call()),
                 ])
                 .transition(RouterTransition::slide_overlay())
                 .fallback("/")
@@ -69,27 +51,13 @@ fn switch_label(mode: ThemeMode) -> &'static str {
     }
 }
 
-fn apply_todo_brand(theme: Theme) -> Theme {
-    theme.brand_states(
-        Color::from_hex(0x2563EB),
-        Color::from_hex(0x1D4ED8),
-        Color::from_hex(0x1E40AF),
-    )
-}
-
 fn todo_light_theme() -> Theme {
-    apply_todo_brand(Theme::light())
+    Theme::light().brand(Color::from_hex(0x2563EB))
 }
 
 fn todo_dark_theme() -> Theme {
-    apply_todo_brand(Theme::dark())
+    Theme::dark().brand(Color::from_hex(0x2563EB))
 }
-
-#[derive(Clone, Copy)]
-struct TodoPageTitle(&'static str);
-
-#[derive(Clone, Copy)]
-struct TodoPageSubtitle(&'static str);
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum Filter {
@@ -216,6 +184,7 @@ fn toggle_theme_button(theme_mode: Signal<ThemeMode>) -> Button {
     let label = switch_label(theme_mode.get());
     Button::builder()
         .label(label)
+        .variant(ButtonVariant::Secondary)
         .on_click(move || {
             theme_mode.with_mut(|mode| {
                 *mode = toggle_mode(*mode);
@@ -225,32 +194,22 @@ fn toggle_theme_button(theme_mode: Signal<ThemeMode>) -> Button {
 }
 
 fn secondary_button(label: &str, on_click: impl FnMut() + 'static) -> Button {
-    let theme = current_theme();
     Button::builder()
         .label(label)
-        .background(theme.surface_variant_color())
-        .text_color(theme.text_color())
+        .variant(ButtonVariant::Secondary)
         .on_click(on_click)
         .build()
 }
 
 fn filter_button(label: &str, model: Signal<TodoModel>, filter: Filter, current: Filter) -> Button {
-    let theme = current_theme();
-    let selected = current == filter;
-    let background = if selected {
-        theme.primary_color()
+    let variant = if current == filter {
+        ButtonVariant::Primary
     } else {
-        theme.surface_variant_color()
-    };
-    let text_color = if selected {
-        Color::WHITE
-    } else {
-        theme.text_color()
+        ButtonVariant::Secondary
     };
     Button::builder()
         .label(label)
-        .background(background)
-        .text_color(text_color)
+        .variant(variant)
         .on_click(move || {
             apply_action(model, TodoAction::SetFilter(filter));
         })
@@ -332,8 +291,7 @@ fn todo_row(model: Signal<TodoModel>, todo: TodoItem) -> Container {
         .child(
             Button::builder()
                 .label("Delete")
-                .background(theme.error_color())
-                .text_color(Color::WHITE)
+                .variant(ButtonVariant::Danger)
                 .on_click(move || {
                     apply_action(model, TodoAction::Delete(id));
                 })
@@ -342,7 +300,6 @@ fn todo_row(model: Signal<TodoModel>, todo: TodoItem) -> Container {
 }
 
 fn input_row(model: Signal<TodoModel>, draft: String, analysis: TaskHook) -> Container {
-    let theme = current_theme();
     let model_for_change = model;
     let model_for_submit = model;
     let model_for_add = model;
@@ -368,8 +325,6 @@ fn input_row(model: Signal<TodoModel>, draft: String, analysis: TaskHook) -> Con
         .child(
             Button::builder()
                 .label("Add")
-                .background(theme.primary_color())
-                .text_color(Color::WHITE)
                 .on_click(move || {
                     apply_action(model_for_add, TodoAction::AddDraft);
                 })
@@ -381,12 +336,6 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
     let model = cx.signal(TodoModel::default());
     let analysis = cx.use_task("todo.input-analysis", "analyze_text");
     let navigator = cx.navigator();
-    let page_title = cx.use_context_or(TodoPageTitle("Todo")).0;
-    let page_subtitle = cx
-        .use_context_or_else(|| {
-            TodoPageSubtitle("Sparsha native + web example using signal-driven state.")
-        })
-        .0;
     let snapshot = model.get();
     let theme = cx.theme();
     let is_dark = theme_mode.get() == ThemeMode::Dark;
@@ -401,15 +350,14 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
     let shell_bg = theme.background_color();
     let panel_bg = theme.surface_color();
     let card_bg = theme.surface_variant_color();
-    let subdued_text = theme.muted_text_color();
     let analysis_color = if is_dark {
         theme.focus_color()
     } else {
         theme.primary_hovered_color()
     };
-    let visible: Vec<TodoItem> = snapshot.filtered_todos().cloned().collect();
+    let has_visible_todos = snapshot.filtered_todos().next().is_some();
 
-    let todo_list = if visible.is_empty() {
+    let todo_list = if !has_visible_todos {
         Container::column()
             .padding(14.0)
             .background(card_bg)
@@ -417,14 +365,13 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
             .child(
                 Text::builder()
                     .content("No tasks for this filter yet.")
-                    .font_size(14.0)
-                    .color(subdued_text)
+                    .variant(TextVariant::Caption)
                     .build(),
             )
             .into_widget()
     } else {
         ForEach::new(
-            visible,
+            snapshot.filtered_todos().cloned(),
             |todo| todo.id as usize,
             move |todo| todo_row(model, todo),
         )
@@ -447,19 +394,16 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
                 .align_items(taffy::prelude::AlignItems::Center)
                 .child(
                     Text::builder()
-                        .content(page_title)
-                        .font_size(28.0)
-                        .bold(true)
-                        .color(theme.text_color())
+                        .content("Todo")
+                        .variant(TextVariant::Header)
                         .build(),
                 )
                 .child(toggle_theme_button(theme_mode)),
         )
         .child(
             Text::builder()
-                .content(page_subtitle)
-                .font_size(13.0)
-                .color(subdued_text)
+                .content("Sparsha native + web example using signal-driven state.")
+                .variant(TextVariant::Caption)
                 .build(),
         )
         .child(
@@ -485,8 +429,7 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
                             done_count,
                             snapshot.todos.len()
                         ))
-                        .font_size(13.0)
-                        .color(subdued_text)
+                        .variant(TextVariant::Caption)
                         .build(),
                 )
                 .child(footer_actions(model, navigator)),
@@ -502,13 +445,6 @@ fn todo_app(cx: &mut ComponentContext<'_>, theme_mode: Signal<ThemeMode>) -> Con
 fn todo_about(cx: &mut ComponentContext<'_>) -> Container {
     let theme = cx.theme();
     let navigator = cx.navigator();
-    let page_title = cx.use_context_or(TodoPageTitle("About Todo")).0;
-    let page_subtitle = cx.use_context_or_else(|| {
-        TodoPageSubtitle(
-            "This example stays intentionally small: one task screen, one about route, shared theme state, and the same component code on native and web.",
-        )
-    })
-    .0;
     Container::column()
         .fill()
         .padding(32.0)
@@ -521,17 +457,16 @@ fn todo_about(cx: &mut ComponentContext<'_>) -> Container {
                 .corner_radius(16.0)
                 .child(
                     Text::builder()
-                        .content(page_title)
-                        .font_size(28.0)
-                        .bold(true)
-                        .color(theme.text_color())
+                        .content("About Todo")
+                        .variant(TextVariant::Header)
                         .build(),
                 )
                 .child(
                     Text::builder()
-                        .content(page_subtitle)
-                        .font_size(16.0)
-                        .color(theme.muted_text_color())
+                        .content(
+                            "One task screen, one about route, shared theme state, and the same component code on native and web.",
+                        )
+                        .variant(TextVariant::Body)
                         .build(),
                 )
                 .child(

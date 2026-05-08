@@ -10,7 +10,7 @@ fn readme_example_builds_against_the_frozen_surface() {
             .theme(Theme::light())
             .router(
                 Router::builder()
-                .routes(vec![Route::new("/", || {
+                .routes([Route::new("/", || {
                     Provider::new(
                         ThemeMode::Light,
                         component()
@@ -28,7 +28,12 @@ fn readme_example_builds_against_the_frozen_surface() {
                                             .content(format!("Build UI with a GPU-first stack. Mode: {mode:?}"))
                                             .build(),
                                     )
-                                    .child(Button::builder().label("Click me").build())
+                                    .child(
+                                        Button::builder()
+                                            .label("Click me")
+                                            .variant(ButtonVariant::Primary)
+                                            .build(),
+                                    )
                                     .child(TextInput::builder().placeholder("Type here...").build())
                             })
                             .call(),
