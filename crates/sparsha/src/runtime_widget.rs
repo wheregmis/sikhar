@@ -781,8 +781,9 @@ mod tests {
     use sparsha_render::{DrawCommand, DrawList};
     use sparsha_text::{TextLayoutAlignment, TextWrap};
     use sparsha_widgets::{
-        Button, Container, CrossAxisAlignment, List, MainAxisAlignment, PaintCommands,
-        PaintContext, Semantics, Text, TextAlign, TextInput, TextVariant, WidgetChildMode,
+        AppBar, Button, Center, Container, CrossAxisAlignment, FloatingActionButton, List,
+        MainAxisAlignment, Padding, PaintCommands, PaintContext, Scaffold, Semantics, Text,
+        TextAlign, TextInput, TextVariant, WidgetChildMode,
     };
     use std::sync::{
         atomic::{AtomicUsize, Ordering},
@@ -1578,6 +1579,52 @@ mod tests {
             child_layout.bounds.y > 50.0,
             "child y was {}",
             child_layout.bounds.y
+        );
+    }
+
+    #[test]
+    fn scaffold_with_fab_still_paints_body_text() {
+        let mut root = Scaffold::new(Center::new(Padding::all(
+            24.0,
+            Container::column()
+                .fill_width()
+                .gap(16.0)
+                .cross_axis_alignment(CrossAxisAlignment::Stretch)
+                .child(
+                    Text::builder()
+                        .content("You have pushed the button this many times:")
+                        .font_size(16.0)
+                        .fill_width(true)
+                        .align(TextAlign::Center)
+                        .build(),
+                )
+                .child(
+                    Text::builder()
+                        .content("0")
+                        .font_size(72.0)
+                        .bold(true)
+                        .fill_width(true)
+                        .align(TextAlign::Center)
+                        .build(),
+                ),
+        )))
+        .app_bar(AppBar::new("Counter title").center_title(true))
+        .floating_action_button(FloatingActionButton::new("+"));
+
+        let (layout_tree, _) = build_registry(&mut root);
+        let draw_list = paint_widget_subtree(&root, &layout_tree);
+        let texts: Vec<_> = draw_list
+            .commands()
+            .iter()
+            .filter_map(|command| match command {
+                DrawCommand::TextRun { run } => Some(run.text.as_str()),
+                _ => None,
+            })
+            .collect();
+
+        assert!(
+            texts.contains(&"You have pushed the button this many times:") && texts.contains(&"0"),
+            "painted text runs were {texts:?}"
         );
     }
 

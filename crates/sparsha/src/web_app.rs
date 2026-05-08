@@ -633,9 +633,15 @@ fn start_animation_loop(
 
     *frame_cb_clone.borrow_mut() = Some(Closure::wrap(Box::new(move |_ts: f64| {
         pending_animation_frame_for_callback.set(false);
-        {
-            let mut state = state_for_callback.borrow_mut();
+        if let Ok(mut state) = state_for_callback.try_borrow_mut() {
             state.frame();
+        } else {
+            schedule_animation_frame(
+                &window_for_loop,
+                &pending_animation_frame_for_callback,
+                &frame_cb_for_callback,
+            );
+            return;
         }
         if state_for_callback.borrow().should_schedule_frame() {
             schedule_animation_frame(
@@ -1083,25 +1089,30 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_key_down = Closure::wrap(Box::new(move |event: WebKeyboardEvent| {
-            let focused_text_editor = state.borrow().focused_text_editor_state().is_some();
-            let dispatch = state.borrow().event_translator().translate_key_down(
-                &event.key(),
-                event.shift_key(),
-                event.ctrl_key(),
-                event.alt_key(),
-                event.meta_key(),
-                focused_text_editor,
-            );
+            let focused_text_editor = { state.borrow().focused_text_editor_state().is_some() };
+            let dispatch = {
+                state.borrow().event_translator().translate_key_down(
+                    &event.key(),
+                    event.shift_key(),
+                    event.ctrl_key(),
+                    event.alt_key(),
+                    event.meta_key(),
+                    focused_text_editor,
+                )
+            };
             if dispatch.prevent_default {
                 event.prevent_default();
             }
+            let mut state_ref = state.borrow_mut();
             if let Some(keyboard_event) = dispatch.keyboard_event {
-                state.borrow_mut().handle_event(keyboard_event);
+                state_ref.handle_event(keyboard_event);
             }
             if let Some(text_event) = dispatch.text_event {
-                state.borrow_mut().handle_event(text_event);
+                state_ref.handle_event(text_event);
             }
-            if state.borrow().should_schedule_frame() {
+            let should_schedule = state_ref.should_schedule_frame();
+            drop(state_ref);
+            if should_schedule {
                 schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
             }
         }) as Box<dyn FnMut(_)>);
@@ -1116,17 +1127,23 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_key_up = Closure::wrap(Box::new(move |event: WebKeyboardEvent| {
-            if let Some(key_event) = state.borrow().event_translator().translate_key_up(
-                &event.key(),
-                event.shift_key(),
-                event.ctrl_key(),
-                event.alt_key(),
-                event.meta_key(),
-            ) {
-                state.borrow_mut().handle_event(key_event);
-            }
-            if state.borrow().should_schedule_frame() {
-                schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
+            let translated = {
+                state.borrow().event_translator().translate_key_up(
+                    &event.key(),
+                    event.shift_key(),
+                    event.ctrl_key(),
+                    event.alt_key(),
+                    event.meta_key(),
+                )
+            };
+            if let Some(key_event) = translated {
+                let mut state_ref = state.borrow_mut();
+                state_ref.handle_event(key_event);
+                let should_schedule = state_ref.should_schedule_frame();
+                drop(state_ref);
+                if should_schedule {
+                    schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
+                }
             }
         }) as Box<dyn FnMut(_)>);
         let _ = root.add_event_listener_with_callback("keyup", on_key_up.as_ref().unchecked_ref());
@@ -1140,18 +1157,30 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_before_input = Closure::wrap(Box::new(move |event: WebInputEvent| {
-            let translated = state.borrow().event_translator().translate_before_input(
-                &event.input_type(),
-                event.data(),
-                state.borrow().text_input_is_syncing(),
-                state.borrow().focused_text_editor_state().is_some(),
-            );
+            let (is_syncing, focused_text_editor) = {
+                let state_ref = state.borrow();
+                (
+                    state_ref.text_input_is_syncing(),
+                    state_ref.focused_text_editor_state().is_some(),
+                )
+            };
+            let translated = {
+                state.borrow().event_translator().translate_before_input(
+                    &event.input_type(),
+                    event.data(),
+                    is_syncing,
+                    focused_text_editor,
+                )
+            };
             if let Some(input_event) = translated {
                 event.prevent_default();
-                state.borrow_mut().handle_event(input_event);
-            }
-            if state.borrow().should_schedule_frame() {
-                schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
+                let mut state_ref = state.borrow_mut();
+                state_ref.handle_event(input_event);
+                let should_schedule = state_ref.should_schedule_frame();
+                drop(state_ref);
+                if should_schedule {
+                    schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
+                }
             }
         }) as Box<dyn FnMut(_)>);
         let _ = bridge.add_event_listener_with_callback(
@@ -1168,14 +1197,19 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_input = Closure::wrap(Box::new(move |_event: WebInputEvent| {
-            if state.borrow().text_input_is_syncing() {
+            let should_sync = {
+                let state_ref = state.borrow();
+                !state_ref.text_input_is_syncing()
+                    && state_ref.focused_text_editor_state().is_some()
+            };
+            if !should_sync {
                 return;
             }
-            if state.borrow().focused_text_editor_state().is_none() {
-                return;
-            }
-            state.borrow_mut().sync_text_input_bridge();
-            if state.borrow().should_schedule_frame() {
+            let mut state_ref = state.borrow_mut();
+            state_ref.sync_text_input_bridge();
+            let should_schedule = state_ref.should_schedule_frame();
+            drop(state_ref);
+            if should_schedule {
                 schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
             }
         }) as Box<dyn FnMut(_)>);
@@ -1190,15 +1224,17 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_composition_start = Closure::wrap(Box::new(move |_event: WebCompositionEvent| {
-            let translated = state
-                .borrow()
-                .event_translator()
-                .translate_composition_start(
-                    state.borrow().text_input_is_syncing(),
-                    state.borrow().focused_text_editor_state().is_some(),
-                );
+            let translated = {
+                let state_ref = state.borrow();
+                state_ref.event_translator().translate_composition_start(
+                    state_ref.text_input_is_syncing(),
+                    state_ref.focused_text_editor_state().is_some(),
+                )
+            };
             if let Some(input_event) = translated {
-                let mut state_ref = state.borrow_mut();
+                let Ok(mut state_ref) = state.try_borrow_mut() else {
+                    return;
+                };
                 state_ref.ime_composing = true;
                 state_ref.handle_event(input_event);
                 let should_schedule = state_ref.should_schedule_frame();
@@ -1222,17 +1258,22 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_composition_update = Closure::wrap(Box::new(move |event: WebCompositionEvent| {
-            if let Some(input_event) = state
-                .borrow()
-                .event_translator()
-                .translate_composition_update(
+            let translated = {
+                let state_ref = state.borrow();
+                state_ref.event_translator().translate_composition_update(
                     event.data().unwrap_or_default(),
-                    state.borrow().text_input_is_syncing(),
-                    state.borrow().focused_text_editor_state().is_some(),
+                    state_ref.text_input_is_syncing(),
+                    state_ref.focused_text_editor_state().is_some(),
                 )
-            {
-                state.borrow_mut().handle_event(input_event);
-                if state.borrow().should_schedule_frame() {
+            };
+            if let Some(input_event) = translated {
+                let Ok(mut state_ref) = state.try_borrow_mut() else {
+                    return;
+                };
+                state_ref.handle_event(input_event);
+                let should_schedule = state_ref.should_schedule_frame();
+                drop(state_ref);
+                if should_schedule {
                     schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
                 }
             }
@@ -1251,12 +1292,18 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_composition_end = Closure::wrap(Box::new(move |event: WebCompositionEvent| {
-            if let Some(input_event) = state.borrow().event_translator().translate_composition_end(
-                event.data().unwrap_or_default(),
-                state.borrow().text_input_is_syncing(),
-                state.borrow().focused_text_editor_state().is_some(),
-            ) {
-                let mut state_ref = state.borrow_mut();
+            let translated = {
+                let state_ref = state.borrow();
+                state_ref.event_translator().translate_composition_end(
+                    event.data().unwrap_or_default(),
+                    state_ref.text_input_is_syncing(),
+                    state_ref.focused_text_editor_state().is_some(),
+                )
+            };
+            if let Some(input_event) = translated {
+                let Ok(mut state_ref) = state.try_borrow_mut() else {
+                    return;
+                };
                 state_ref.ime_composing = false;
                 state_ref.handle_event(input_event);
                 let should_schedule = state_ref.should_schedule_frame();
@@ -1280,16 +1327,24 @@ fn install_event_listeners(
         let frame_cb = Rc::clone(frame_cb);
         let window = window.clone();
         let on_paste = Closure::wrap(Box::new(move |event: ClipboardEvent| {
-            let translated = state.borrow().event_translator().translate_paste(
-                event
-                    .clipboard_data()
-                    .and_then(|clipboard| clipboard.get_data("text/plain").ok()),
-                state.borrow().focused_text_editor_state().is_some(),
-            );
+            let translated = {
+                let state_ref = state.borrow();
+                state_ref.event_translator().translate_paste(
+                    event
+                        .clipboard_data()
+                        .and_then(|clipboard| clipboard.get_data("text/plain").ok()),
+                    state_ref.focused_text_editor_state().is_some(),
+                )
+            };
             if let Some(input_event) = translated {
                 event.prevent_default();
-                state.borrow_mut().handle_event(input_event);
-                if state.borrow().should_schedule_frame() {
+                let Ok(mut state_ref) = state.try_borrow_mut() else {
+                    return;
+                };
+                state_ref.handle_event(input_event);
+                let should_schedule = state_ref.should_schedule_frame();
+                drop(state_ref);
+                if should_schedule {
                     schedule_animation_frame(&window, &pending_animation_frame, &frame_cb);
                 }
             }
@@ -1523,6 +1578,9 @@ fn install_event_listeners(
         let window = window.clone();
         let target = semantic_root.clone();
         let on_input = Closure::wrap(Box::new(move |event: Event| {
+            if state.borrow().text_input_is_syncing() {
+                return;
+            }
             if !event_target_is_text_editor(event.target()) {
                 return;
             }
@@ -1532,7 +1590,9 @@ fn install_event_listeners(
             let Some(value) = event_target_text_value(event.target()) else {
                 return;
             };
-            let mut state_ref = state.borrow_mut();
+            let Ok(mut state_ref) = state.try_borrow_mut() else {
+                return;
+            };
             state_ref.set_accessibility_text_focus_node(Some(node_id));
             state_ref.handle_accessibility_action(
                 node_id,

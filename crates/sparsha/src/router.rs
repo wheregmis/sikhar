@@ -266,12 +266,12 @@ impl Router {
 
     fn build_for_path(&self, path: &str) -> Box<dyn Widget> {
         if let Some(route) = self.routes.iter().find(|route| route.path == path) {
-            return (route.builder)();
+            return crate::hotpatch::call(|| (route.builder)());
         }
 
         let fallback = self.fallback_resolved();
         if let Some(route) = self.routes.iter().find(|route| route.path == fallback) {
-            return (route.builder)();
+            return crate::hotpatch::call(|| (route.builder)());
         }
 
         Box::new(

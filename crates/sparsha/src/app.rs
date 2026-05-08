@@ -269,6 +269,7 @@ impl From<WgpuInitError> for AppRunError {
 enum NativeUserEvent {
     Accessibility(accesskit_winit::Event),
     TaskCompleted,
+    HotpatchApplied,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -380,6 +381,7 @@ struct AppRunner {
     state: Option<AppState>,
     startup_error: Arc<Mutex<Option<AppRunError>>>,
     event_loop_proxy: EventLoopProxy<NativeUserEvent>,
+    hotpatch_signal: crate::hotpatch::HotpatchSignal,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -502,6 +504,12 @@ impl AppRunner {
         startup_error: Arc<Mutex<Option<AppRunError>>>,
         event_loop_proxy: EventLoopProxy<NativeUserEvent>,
     ) -> Self {
+        let hotpatch_signal = crate::hotpatch::HotpatchSignal::default();
+        let hotpatch_proxy = event_loop_proxy.clone();
+        hotpatch_signal.register(move || {
+            let _ = hotpatch_proxy.send_event(NativeUserEvent::HotpatchApplied);
+        });
+
         Self {
             config,
             theme,
@@ -509,6 +517,7 @@ impl AppRunner {
             state: None,
             startup_error,
             event_loop_proxy,
+            hotpatch_signal,
         }
     }
 
@@ -538,6 +547,33 @@ impl AppRunner {
             host.refresh_platform_update()
         };
         self.apply_runtime_update(update);
+    }
+
+    fn apply_hotpatch_if_pending(&mut self) -> bool {
+        if !self.hotpatch_signal.take_pending() {
+            return false;
+        }
+        let Some(state) = self.state.as_mut() else {
+            return true;
+        };
+
+        let router = self.router.clone();
+        let root_widget = state
+            .signal_runtime
+            .run_with_current(|| Box::new(RouterHost::new(router)) as Box<dyn Widget>);
+
+        state.root_widget = root_widget;
+        state.layout_tree = LayoutTree::new();
+        state.widget_registry = WidgetRuntimeRegistry::default();
+        state.component_states = ComponentStateStore::default();
+        state.focus_manager = FocusManager::new();
+        state.focused_path = None;
+        state.capture_path = None;
+        state.ime_composing = false;
+        state.needs_layout = true;
+        state.needs_repaint = true;
+        state.window.request_redraw();
+        true
     }
 
     fn update_control_flow(&self, event_loop: &winit::event_loop::ActiveEventLoop) {
@@ -1310,10 +1346,15 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                 }
             }
             NativeUserEvent::TaskCompleted => {}
+            NativeUserEvent::HotpatchApplied => {
+                self.apply_hotpatch_if_pending();
+            }
         }
     }
 
     fn about_to_wait(&mut self, _event_loop: &winit::event_loop::ActiveEventLoop) {
+        self.apply_hotpatch_if_pending();
+
         if let Some(state) = self.state.as_mut() {
             state.sync_window_metrics();
             let mut had_task_results = false;

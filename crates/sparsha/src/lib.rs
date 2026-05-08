@@ -55,6 +55,7 @@
 mod accessibility;
 mod app;
 mod component;
+mod hotpatch;
 mod platform;
 mod router;
 mod runtime_core;

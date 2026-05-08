@@ -1,0 +1,6 @@
+[application]
+name = "counter"
+
+[bundle]
+identifier = "dev.sparsha.counter"
+version = "0.1.0"

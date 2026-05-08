@@ -3,6 +3,10 @@ name = "counter"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+default = []
+hotpatch = ["sparsha/hotpatch"]
+
 [[bin]]
 name = "counter"
 path = "src/main.rs"
@@ -10,4 +14,3 @@ path = "src/main.rs"
 [dependencies]
 sparsha = { path = "../../crates/sparsha" }
 env_logger = { workspace = true }
-

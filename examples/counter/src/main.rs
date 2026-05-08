@@ -47,11 +47,12 @@ fn counter_app(cx: &mut ComponentContext<'_>) -> Scaffold {
     let count = cx.signal(0i32);
     let theme = cx.theme();
 
-    Scaffold::new(Center::new(Padding::all(
-        24.0,
+    Scaffold::new(
         Container::column()
-            .fill_width()
+            .fill()
+            .padding(24.0)
             .gap(theme.spacing_md())
+            .main_axis_alignment(MainAxisAlignment::Center)
             .cross_axis_alignment(CrossAxisAlignment::Stretch)
             .child(
                 Text::builder()
@@ -74,14 +75,14 @@ fn counter_app(cx: &mut ComponentContext<'_>) -> Scaffold {
                     .overflow(TextOverflow::Clip)
                     .build(),
             ),
-    )))
+    )
     .background(theme.background_color())
-    .app_bar(AppBar::new("Sparsha Demo Home Page").center_title(true))
+    .app_bar(AppBar::new("Sparsha Demoooo").center_title(true))
     .floating_action_button(
-        FloatingActionButton::new("+")
+        FloatingActionButton::new("++")
             .accessibility_label("Increment counter")
             .on_click(move || {
-                count.set(count.get() + 1);
+                count.set(count.get() + 2);
             }),
     )
 }

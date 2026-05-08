@@ -164,6 +164,12 @@ cargo run -p showcase
 cargo run -p todo
 ```
 
+Run the counter example with native Subsecond hotpatching through the Dioxus CLI:
+
+```bash
+dx serve --hotpatch --platform desktop --package counter --features hotpatch
+```
+
 Build and serve a web example from the repo root:
 
 ```bash
