@@ -78,6 +78,7 @@ impl TaskExecutorBackend {
                 },
             };
             let _ = completion_tx.send(result);
+            runtime.wake_completion();
         });
 
         lock_recover(&self.handles, "task handles").insert(task_id, handle);

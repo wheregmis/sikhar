@@ -268,6 +268,7 @@ impl From<WgpuInitError> for AppRunError {
 #[derive(Debug)]
 enum NativeUserEvent {
     Accessibility(accesskit_winit::Event),
+    TaskCompleted,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -765,6 +766,16 @@ fn native_control_flow_for_state(has_presented_frame: bool) -> ControlFlow {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+fn should_request_native_redraw_after_wait(
+    needs_layout: bool,
+    needs_repaint: bool,
+    had_task_results: bool,
+    _has_in_flight_tasks: bool,
+) -> bool {
+    needs_layout || needs_repaint || had_task_results
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum SurfaceAcquireFailure {
     Outdated,
@@ -861,6 +872,10 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                 }
             };
             task_runtime.set_current();
+            let task_event_proxy = self.event_loop_proxy.clone();
+            task_runtime.set_completion_waker(move || {
+                let _ = task_event_proxy.send_event(NativeUserEvent::TaskCompleted);
+            });
             let window_for_scheduler = window;
             signal_runtime.set_scheduler(move || {
                 window_for_scheduler.request_redraw();
@@ -1294,6 +1309,7 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                     accesskit_winit::WindowEvent::AccessibilityDeactivated => {}
                 }
             }
+            NativeUserEvent::TaskCompleted => {}
         }
     }
 
@@ -1324,10 +1340,12 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
             if had_task_results {
                 state.needs_repaint = true;
             }
-            if state.needs_layout || state.needs_repaint {
-                state.window.request_redraw();
-            }
-            if state.task_runtime.has_in_flight() {
+            if should_request_native_redraw_after_wait(
+                state.needs_layout,
+                state.needs_repaint,
+                had_task_results,
+                state.task_runtime.has_in_flight(),
+            ) {
                 state.window.request_redraw();
             }
         }
@@ -1599,6 +1617,22 @@ mod tests {
     fn native_control_flow_polls_until_first_present() {
         assert_eq!(native_control_flow_for_state(false), ControlFlow::Poll);
         assert_eq!(native_control_flow_for_state(true), ControlFlow::Wait);
+    }
+
+    #[test]
+    fn native_wait_redraw_ignores_in_flight_tasks_without_dirty_work() {
+        assert!(!should_request_native_redraw_after_wait(
+            false, false, false, true
+        ));
+        assert!(should_request_native_redraw_after_wait(
+            true, false, false, true
+        ));
+        assert!(should_request_native_redraw_after_wait(
+            false, true, false, true
+        ));
+        assert!(should_request_native_redraw_after_wait(
+            false, false, true, false
+        ));
     }
 
     #[test]

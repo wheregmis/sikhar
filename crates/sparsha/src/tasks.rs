@@ -205,6 +205,7 @@ impl TaskRuntime {
                 task_meta: Mutex::new(HashMap::new()),
                 completion_tx,
                 completion_rx: Mutex::new(completion_rx),
+                completion_waker: Mutex::new(None),
                 disabled_reason: None,
                 backend: Some(TaskExecutorBackend::try_new()?),
             }),
@@ -231,6 +232,7 @@ impl TaskRuntime {
                 task_meta: Mutex::new(HashMap::new()),
                 completion_tx,
                 completion_rx: Mutex::new(completion_rx),
+                completion_waker: Mutex::new(None),
                 disabled_reason: Some(reason.into()),
                 backend: None,
             }),
@@ -264,6 +266,18 @@ impl TaskRuntime {
 
     pub fn has_in_flight(&self) -> bool {
         self.inner.in_flight.load(Ordering::Relaxed) > 0
+    }
+
+    pub(crate) fn set_completion_waker(&self, callback: impl Fn() + Send + Sync + 'static) {
+        *lock_recover(&self.inner.completion_waker, "task completion waker") =
+            Some(Arc::new(callback));
+    }
+
+    pub(crate) fn wake_completion(&self) {
+        let callback = lock_recover(&self.inner.completion_waker, "task completion waker").clone();
+        if let Some(callback) = callback {
+            callback();
+        }
     }
 
     #[must_use]
@@ -459,6 +473,7 @@ struct Inner {
     task_meta: Mutex<HashMap<TaskId, TaskMeta>>,
     completion_tx: mpsc::Sender<TaskResult>,
     completion_rx: Mutex<mpsc::Receiver<TaskResult>>,
+    completion_waker: Mutex<Option<Arc<dyn Fn() + Send + Sync>>>,
     disabled_reason: Option<String>,
     backend: Option<TaskExecutorBackend>,
 }
@@ -478,7 +493,15 @@ static FORCE_NATIVE_RUNTIME_INIT_FAILURE: std::sync::atomic::AtomicBool =
 mod tests {
     use super::*;
     use serde_json::json;
-    use std::{cell::RefCell, sync::Mutex, thread, time::Duration as StdDuration};
+    use std::{
+        cell::RefCell,
+        sync::{
+            atomic::{AtomicUsize, Ordering as AtomicOrdering},
+            Arc, Mutex,
+        },
+        thread,
+        time::Duration as StdDuration,
+    };
 
     static TASK_TEST_LOCK: Mutex<()> = Mutex::new(());
 
@@ -557,6 +580,25 @@ mod tests {
         let results = drain_for(&runtime, 300);
         assert_eq!(results.len(), 1);
         assert!(matches!(results[0].status, TaskStatus::Error(_)));
+    }
+
+    #[test]
+    fn native_completion_waker_runs_when_task_result_is_enqueued() {
+        let _guard = TASK_TEST_LOCK.lock().unwrap();
+        let runtime = TaskRuntime::new();
+        runtime.set_current();
+        let wake_count = Arc::new(AtomicUsize::new(0));
+        let wake_count_for_callback = Arc::clone(&wake_count);
+        runtime.set_completion_waker(move || {
+            wake_count_for_callback.fetch_add(1, AtomicOrdering::Relaxed);
+        });
+
+        runtime.spawn("echo", json!({ "value": 1 }));
+        let results = drain_for(&runtime, 300);
+
+        assert_eq!(results.len(), 1);
+        assert!(matches!(results[0].status, TaskStatus::Success(_)));
+        assert_eq!(wake_count.load(AtomicOrdering::Relaxed), 1);
     }
 
     #[test]
