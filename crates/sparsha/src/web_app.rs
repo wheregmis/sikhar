@@ -4,10 +4,11 @@
 
 use crate::tasks::{TaskRuntime, TaskStatus};
 use crate::{
-    accessibility::AccessibilityTreeSnapshot,
     app::{AppConfig, AppRunError, AppTheme},
     component::ComponentStateStore,
-    dom_renderer::{DomFrameSnapshot, DomRenderer},
+    dom_renderer::DomRenderer,
+    platform::draw::web::WebLayerDrawBackend,
+    platform::draw::{PlatformDrawBackend, PlatformDrawFrame},
     platform::events::WebEventTranslator,
     platform::WebPlatform,
     router::{hash_to_path, path_to_hash, Navigator, Router, RouterHost},
@@ -17,7 +18,6 @@ use crate::{
     runtime_widget::{WidgetPath, WidgetRuntimeRegistry},
     web_surface_manager::{HybridSurfaceManager, HybridSurfaceStatus, SurfaceFrame},
 };
-use sparsha_core::Color;
 use sparsha_input::{FocusManager, InputEvent, Modifiers, PointerButton, StandardAction};
 use sparsha_layout::LayoutTree;
 use sparsha_render::DrawList;
@@ -190,15 +190,6 @@ struct WebAppState {
     ime_composing: bool,
     pending_surface_retry: bool,
     last_route_path: String,
-}
-
-struct WebFrameSnapshot<'a> {
-    draw_list: &'a DrawList,
-    surface_frames: &'a [SurfaceFrame],
-    background: Color,
-    viewport_width: f32,
-    viewport_height: f32,
-    accessibility: AccessibilityTreeSnapshot,
 }
 
 fn paint_widget_subtree(
@@ -556,51 +547,42 @@ impl WebAppState {
                 start_document_view_transition();
             }
 
-            let snapshot = WebFrameSnapshot {
-                draw_list: &self.draw_list,
-                surface_frames: &self.surface_frames,
-                background: self
-                    .theme
-                    .resolve_background(self.config.background_override),
-                viewport_width: self.viewport_width,
-                viewport_height: self.viewport_height,
-                accessibility: self.widget_registry.accessibility_tree().clone(),
-            };
+            let background = self
+                .theme
+                .resolve_background(self.config.background_override);
+            let accessibility = self.widget_registry.accessibility_tree().clone();
 
             let mut dom_rendered = false;
-            if let Err(err) = self.dom_renderer.render(&DomFrameSnapshot {
-                draw_list: snapshot.draw_list,
-                background: snapshot.background,
-                viewport_width: snapshot.viewport_width,
-                viewport_height: snapshot.viewport_height,
-            }) {
-                log::error!("dom render failed: {:?}", err);
-            } else {
-                dom_rendered = true;
+            let mut pending_surface_retry = false;
+            let draw_outcome = {
+                let mut backend = WebLayerDrawBackend {
+                    dom_renderer: &mut self.dom_renderer,
+                    surface_manager: &mut self.surface_manager,
+                };
+                backend.render_frame(PlatformDrawFrame {
+                    draw_list: &self.draw_list,
+                    background,
+                    viewport_width: self.viewport_width,
+                    viewport_height: self.viewport_height,
+                    scale_factor: self.scale_factor,
+                    elapsed_time: self.start_time.elapsed().as_secs_f32(),
+                    surface_frames: &self.surface_frames,
+                })
+            };
+            match draw_outcome {
+                Ok(outcome) => {
+                    dom_rendered = outcome.rendered;
+                    pending_surface_retry = outcome.needs_retry;
+                }
+                Err(err) => {
+                    log::error!("web draw backend render failed: {:?}", err);
+                }
             }
 
-            if let Err(err) = self.platform.render_semantic_dom(&snapshot.accessibility) {
+            if let Err(err) = self.platform.render_semantic_dom(&accessibility) {
                 log::error!("semantic dom render failed: {:?}", err);
                 dom_rendered = false;
             }
-
-            let pending_surface_retry = match self
-                .surface_manager
-                .render(snapshot.surface_frames, Color::TRANSPARENT)
-            {
-                Ok(surface_outcome) => {
-                    surface_outcome.needs_retry
-                        || (!snapshot.surface_frames.is_empty()
-                            && matches!(
-                                self.surface_manager.status(),
-                                HybridSurfaceStatus::Initializing
-                            ))
-                }
-                Err(err) => {
-                    log::error!("hybrid surface render failed: {:?}", err);
-                    false
-                }
-            };
 
             (dom_rendered, pending_surface_retry)
         };

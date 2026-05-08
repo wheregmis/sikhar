@@ -127,10 +127,10 @@ Goal: keep `sparsha` app bootstrap thin and move platform-specific behavior behi
 - [x] Add shared conformance tests that replay the same semantic event sequences (pointer, keyboard, IME/composition, clipboard) through both adapters.
 
 ### Phase 3 — Drawing Boundary (Backend Interface)
-- [ ] Define a rendering backend trait in runtime internals (for example `PlatformDrawBackend`) that consumes `DrawList` frames plus viewport/background metadata.
-- [ ] Keep `sparsha-render` command generation (`DrawCommand`/`DrawList`) platform-neutral and backend-agnostic.
-- [ ] Implement native GPU backend and web retained-DOM/hybrid backend behind the same interface, with no renderer-specific logic in widget/runtime orchestration.
-- [ ] Add golden-style paint tests at draw-command level and backend contract tests that verify clipping, translation stack, and text rendering invariants.
+- [x] Define a rendering backend trait in runtime internals (for example `PlatformDrawBackend`) that consumes `DrawList` frames plus viewport/background metadata.
+- [x] Keep `sparsha-render` command generation (`DrawCommand`/`DrawList`) platform-neutral and backend-agnostic.
+- [x] Implement native GPU backend and web retained-DOM/hybrid backend behind the same interface, with no renderer-specific logic in widget/runtime orchestration.
+- [x] Add golden-style paint tests at draw-command level and backend contract tests that verify clipping, translation stack, and text rendering invariants.
 
 ### Phase 4 — Runtime Composition And Ownership
 - [ ] Introduce a small `platform` module in `crates/sparsha/src/` owning layout/event/draw adapter wiring for each runtime.

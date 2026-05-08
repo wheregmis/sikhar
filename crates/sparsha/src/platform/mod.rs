@@ -2,6 +2,7 @@ use crate::accessibility::AccessibilityTreeSnapshot;
 use sparsha_input::ShortcutProfile;
 use sparsha_widgets::TextEditorState;
 
+pub(crate) mod draw;
 pub(crate) mod events;
 pub(crate) mod layout;
 #[cfg(not(target_arch = "wasm32"))]

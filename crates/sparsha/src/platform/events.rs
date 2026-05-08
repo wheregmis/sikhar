@@ -47,6 +47,7 @@ impl PlatformShortcutPolicy {
         self.profile.primary_modifiers()
     }
 
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     pub(crate) fn primary_modifier_active(self, modifiers: Modifiers) -> bool {
         shortcuts::primary_modifier_for(self.profile, modifiers)
     }

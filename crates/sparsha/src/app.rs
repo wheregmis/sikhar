@@ -5,6 +5,10 @@ use crate::accessibility::action_from_accesskit;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::component::ComponentStateStore;
 #[cfg(not(target_arch = "wasm32"))]
+use crate::platform::draw::native::NativeGpuDrawBackend;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::platform::draw::{PlatformDrawBackend, PlatformDrawFrame};
+#[cfg(not(target_arch = "wasm32"))]
 use crate::platform::events::{NativeEventTranslator, NativeKeyboardDispatch};
 #[cfg(not(target_arch = "wasm32"))]
 use crate::platform::{NativePlatform, PlatformId};
@@ -1138,26 +1142,7 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                     return;
                 };
 
-                // Update renderer
                 let size = state.surface_state.size;
-                state.renderer.set_viewport(
-                    size.width as f32,
-                    size.height as f32,
-                    state.scale_factor,
-                );
-                state
-                    .renderer
-                    .set_time(state.start_time.elapsed().as_secs_f32());
-
-                // Prepare render
-                state.renderer.prepare(
-                    &state.device,
-                    &state.queue,
-                    &state.draw_list,
-                    &mut state.text_system,
-                );
-
-                // Get frame
                 let frame = match state.surface_state.surface.get_current_texture() {
                     wgpu::CurrentSurfaceTexture::Success(frame) => frame,
                     wgpu::CurrentSurfaceTexture::Suboptimal(frame) => {
@@ -1259,16 +1244,23 @@ impl winit::application::ApplicationHandler<NativeUserEvent> for AppRunner {
                 let bg = state
                     .theme
                     .resolve_background(self.config.background_override);
-                state.renderer.render(
-                    &mut encoder,
-                    &view,
-                    wgpu::Color {
-                        r: bg.r as f64,
-                        g: bg.g as f64,
-                        b: bg.b as f64,
-                        a: bg.a as f64,
-                    },
-                );
+                let elapsed_time = state.start_time.elapsed().as_secs_f32();
+                let mut backend = NativeGpuDrawBackend {
+                    renderer: &mut state.renderer,
+                    device: &state.device,
+                    queue: &state.queue,
+                    text_system: &mut state.text_system,
+                    encoder: &mut encoder,
+                    target: &view,
+                };
+                let _ = backend.render_frame(PlatformDrawFrame {
+                    draw_list: &state.draw_list,
+                    background: bg,
+                    viewport_width: size.width as f32,
+                    viewport_height: size.height as f32,
+                    scale_factor: state.scale_factor,
+                    elapsed_time,
+                });
 
                 state.queue.submit(Some(encoder.finish()));
                 frame.present();

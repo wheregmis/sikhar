@@ -257,6 +257,48 @@ mod tests {
     use std::time::Instant;
 
     #[test]
+    fn draw_list_preserves_backend_neutral_command_order() {
+        let mut draw_list = DrawList::new();
+        draw_list.push_clip(Rect::new(0.0, 0.0, 100.0, 80.0));
+        draw_list.push_translation((8.0, 12.0));
+        draw_list.rect(Rect::new(4.0, 6.0, 24.0, 16.0), Color::WHITE);
+        draw_list.text_run("Label", TextStyle::default(), 10.0, 18.0);
+        draw_list.pop_translation();
+        draw_list.pop_clip();
+
+        let golden: Vec<&'static str> = draw_list
+            .commands()
+            .iter()
+            .map(|command| match command {
+                DrawCommand::PushClip { .. } => "push_clip",
+                DrawCommand::PushTranslation { .. } => "push_translation",
+                DrawCommand::Rect { .. } => "rect",
+                DrawCommand::TextRun { .. } => "text_run",
+                DrawCommand::PopTranslation => "pop_translation",
+                DrawCommand::PopClip => "pop_clip",
+                DrawCommand::Line { .. } => "line",
+                DrawCommand::Text { .. } => "text",
+            })
+            .collect();
+
+        assert_eq!(
+            golden,
+            vec![
+                "push_clip",
+                "push_translation",
+                "rect",
+                "text_run",
+                "pop_translation",
+                "pop_clip"
+            ]
+        );
+        assert!(matches!(
+            &draw_list.commands()[3],
+            DrawCommand::TextRun { run } if run.text == "Label"
+        ));
+    }
+
+    #[test]
     #[ignore = "perf smoke"]
     fn perf_smoke_draw_list_encoding() {
         let start = Instant::now();
