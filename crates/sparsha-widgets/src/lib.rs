@@ -12,6 +12,8 @@ mod container;
 pub mod context;
 mod control_state;
 mod draw_surface;
+mod element_into;
+mod element_root;
 mod for_each;
 mod into_widget;
 mod layout_helpers;
@@ -43,6 +45,8 @@ pub use context::{
     BuildContext, EventCommands, EventContext, LayoutContext, PaintCommands, PaintContext,
 };
 pub use draw_surface::{DrawSurface, DrawSurfaceContext};
+pub use element_into::{ButtonWidgetElement, TextInputWidgetElement, TextWidgetElement};
+pub use element_root::{element_root, element_to_widget, ElementDomSnapshot, ElementRoot};
 pub use for_each::ForEach;
 pub use into_widget::IntoWidget;
 pub use layout_helpers::{

@@ -1,0 +1,12 @@
+[package]
+name = "hello-gpui"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "hello-gpui"
+path = "src/main.rs"
+
+[dependencies]
+sparsha = { path = "../../crates/sparsha" }
+env_logger = { workspace = true }

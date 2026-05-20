@@ -6,7 +6,11 @@ use crate::tasks::{TaskRuntime, TaskStatus};
 use crate::{
     app::{AppConfig, AppRunError, AppTheme},
     component::ComponentStateStore,
-    dom_renderer::DomRenderer,
+    dom_renderer::{color_to_css, set_dom_style, DomFrameSnapshot, DomRenderer},
+    dom_tailwind_renderer::{
+        dispatch_element_click, element_id_from_target, DomTailwindRenderer,
+    },
+    runtime_widget::{element_dom_snapshot_from_widget, widget_uses_element_dom},
     platform::draw::web::WebLayerDrawBackend,
     platform::draw::{PlatformDrawBackend, PlatformDrawFrame},
     platform::events::WebEventTranslator,
@@ -84,6 +88,9 @@ pub(crate) fn run_dom_app(
     document.set_title(&config.title);
     let dom_renderer = DomRenderer::mount_to_body(&document)
         .map_err(|err| AppRunError::DomMount(format_js_error(&err)))?;
+    let dom_tailwind_renderer =
+        DomTailwindRenderer::mount_under(dom_renderer.root(), &document)
+            .map_err(|err| AppRunError::DomMount(format_js_error(&err)))?;
     let surface_manager = HybridSurfaceManager::new(dom_renderer.root())
         .map_err(|err| AppRunError::HybridSurfaceInit(format_js_error(&err)))?;
     let platform = WebPlatform::new(&document, dom_renderer.root())
@@ -115,6 +122,7 @@ pub(crate) fn run_dom_app(
         router: router.clone(),
         router_navigator: navigator,
         dom_renderer,
+        dom_tailwind_renderer,
         text_system: TextSystem::new_headless(),
         draw_list: DrawList::new(),
         surface_frames: Vec::new(),
@@ -177,6 +185,7 @@ struct WebAppState {
     router: Router,
     router_navigator: Navigator,
     dom_renderer: DomRenderer,
+    dom_tailwind_renderer: DomTailwindRenderer,
     text_system: TextSystem,
     draw_list: DrawList,
     surface_frames: Vec<SurfaceFrame>,
@@ -499,6 +508,9 @@ impl WebAppState {
         runtime.with_tracking(SubscriberKind::Paint, || {
             set_current_theme(self.theme.resolve_theme());
             set_current_viewport(self.logical_viewport());
+            if widget_uses_element_dom(self.root_widget.as_ref()) {
+                return;
+            }
             paint_widget_subtree(
                 self.root_widget.as_ref(),
                 &self.layout_tree,
@@ -592,28 +604,57 @@ impl WebAppState {
 
             let mut dom_rendered = false;
             let mut pending_surface_retry = false;
-            let draw_outcome = {
-                let mut backend = WebLayerDrawBackend {
-                    dom_renderer: &mut self.dom_renderer,
-                    surface_manager: &mut self.surface_manager,
-                };
-                backend.render_frame(PlatformDrawFrame {
-                    draw_list: &self.draw_list,
+            let uses_element_dom = widget_uses_element_dom(self.root_widget.as_ref());
+            if uses_element_dom {
+                let _ = self.dom_tailwind_renderer.set_visible(true);
+                if let Some(snapshot) =
+                    element_dom_snapshot_from_widget(self.root_widget.as_ref())
+                {
+                    match self.dom_tailwind_renderer.render_snapshot(
+                        &snapshot,
+                        self.viewport_width,
+                        self.viewport_height,
+                    ) {
+                        Ok(()) => dom_rendered = true,
+                        Err(err) => log::error!("tailwind dom render failed: {:?}", err),
+                    }
+                }
+                let _ = self.dom_renderer.render(&DomFrameSnapshot {
+                    draw_list: &DrawList::new(),
                     background,
                     viewport_width: self.viewport_width,
                     viewport_height: self.viewport_height,
-                    scale_factor: self.scale_factor,
-                    elapsed_time: self.start_time.elapsed().as_secs_f32(),
-                    surface_frames: &self.surface_frames,
-                })
-            };
-            match draw_outcome {
-                Ok(outcome) => {
-                    dom_rendered = outcome.rendered;
-                    pending_surface_retry = outcome.needs_retry;
-                }
-                Err(err) => {
-                    log::error!("web draw backend render failed: {:?}", err);
+                });
+                let _ = set_dom_style(
+                    self.dom_renderer.root(),
+                    "background-color",
+                    &color_to_css(background),
+                );
+            } else {
+                let _ = self.dom_tailwind_renderer.set_visible(false);
+                let draw_outcome = {
+                    let mut backend = WebLayerDrawBackend {
+                        dom_renderer: &mut self.dom_renderer,
+                        surface_manager: &mut self.surface_manager,
+                    };
+                    backend.render_frame(PlatformDrawFrame {
+                        draw_list: &self.draw_list,
+                        background,
+                        viewport_width: self.viewport_width,
+                        viewport_height: self.viewport_height,
+                        scale_factor: self.scale_factor,
+                        elapsed_time: self.start_time.elapsed().as_secs_f32(),
+                        surface_frames: &self.surface_frames,
+                    })
+                };
+                match draw_outcome {
+                    Ok(outcome) => {
+                        dom_rendered = outcome.rendered;
+                        pending_surface_retry = outcome.needs_retry;
+                    }
+                    Err(err) => {
+                        log::error!("web draw backend render failed: {:?}", err);
+                    }
                 }
             }
 
@@ -827,6 +868,17 @@ fn install_event_listeners(
             let pos = mouse_pos(&root_for_event, &event);
             let mut state_ref = state.borrow_mut();
             state_ref.mouse_pos = pos;
+            if widget_uses_element_dom(state_ref.root_widget.as_ref()) {
+                if let (Some(snapshot), Some(element_id)) = (
+                    element_dom_snapshot_from_widget(state_ref.root_widget.as_ref()),
+                    element_id_from_target(event.target()),
+                ) {
+                    if dispatch_element_click(&snapshot, element_id) {
+                        state_ref.needs_layout = true;
+                        state_ref.needs_repaint = true;
+                    }
+                }
+            }
             let input_event = state_ref
                 .event_translator()
                 .translate_pointer_up(pos, event.button());

@@ -369,15 +369,23 @@ impl DomRenderer {
     }
 }
 
-fn set_style(node: &HtmlElement, key: &str, value: &str) -> Result<(), wasm_bindgen::JsValue> {
+pub(crate) fn set_dom_style(
+    node: &HtmlElement,
+    key: &str,
+    value: &str,
+) -> Result<(), wasm_bindgen::JsValue> {
     node.style().set_property(key, value)
+}
+
+fn set_style(node: &HtmlElement, key: &str, value: &str) -> Result<(), wasm_bindgen::JsValue> {
+    set_dom_style(node, key, value)
 }
 
 fn px(value: f32) -> String {
     format!("{value}px")
 }
 
-fn color_to_css(color: Color) -> String {
+pub(crate) fn color_to_css(color: Color) -> String {
     let r = (linear_to_srgb(color.r).clamp(0.0, 1.0) * 255.0).round() as u8;
     let g = (linear_to_srgb(color.g).clamp(0.0, 1.0) * 255.0).round() as u8;
     let b = (linear_to_srgb(color.b).clamp(0.0, 1.0) * 255.0).round() as u8;

@@ -6,8 +6,8 @@ use sparsha_input::{FocusManager, InputEvent};
 use sparsha_layout::{taffy::Dimension, LayoutTree, WidgetId};
 use sparsha_text::TextSystem;
 use sparsha_widgets::{
-    AccessibilityInfo, AccessibilityRole, EventCommands, EventContext, LayoutContext,
-    TextEditorState, Widget, WidgetChildMode,
+    AccessibilityInfo, AccessibilityRole, ElementDomSnapshot, EventCommands, EventContext,
+    LayoutContext, TextEditorState, Widget, WidgetChildMode,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -54,6 +54,30 @@ pub(crate) struct DispatchOutcome {
     pub commands: EventCommands,
     pub focus_path: Option<WidgetPath>,
     pub capture_path: Option<WidgetPath>,
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn element_dom_snapshot_from_widget(widget: &dyn Widget) -> Option<ElementDomSnapshot> {
+    if let Some(snapshot) = widget.element_dom_snapshot() {
+        return Some(snapshot);
+    }
+    for child in widget.children() {
+        if let Some(snapshot) = element_dom_snapshot_from_widget(child.as_ref()) {
+            return Some(snapshot);
+        }
+    }
+    None
+}
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn widget_uses_element_dom(widget: &dyn Widget) -> bool {
+    if widget.uses_element_dom() {
+        return true;
+    }
+    widget
+        .children()
+        .iter()
+        .any(|child| widget_uses_element_dom(child.as_ref()))
 }
 
 pub(crate) fn add_widget_to_layout(

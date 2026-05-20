@@ -1,0 +1,13 @@
+[package]
+name = "sparsha-elements"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "GPUI-inspired element composition API for Sparsha"
+
+[dependencies]
+sparsha-core = { path = "../sparsha-core" }
+taffy = { workspace = true }
+
+[dev-dependencies]
+sparsha-core = { path = "../sparsha-core" }

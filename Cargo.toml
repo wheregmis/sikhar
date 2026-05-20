@@ -7,7 +7,9 @@ members = [
     "crates/sparsha-input",
     "crates/sparsha-signals",
     "crates/sparsha-widgets",
+    "crates/sparsha-elements",
     "crates/sparsha",
+    "examples/hello-gpui",
     "examples/counter",
     "examples/layout-probe",
     "examples/fractal-clock",
@@ -67,6 +69,7 @@ sparsha-text = { path = "crates/sparsha-text" }
 sparsha-input = { path = "crates/sparsha-input" }
 sparsha-signals = { path = "crates/sparsha-signals" }
 sparsha-widgets = { path = "crates/sparsha-widgets" }
+sparsha-elements = { path = "crates/sparsha-elements" }
 
 # Web dependencies (add to workspace.dependencies for individual crates)
 wasm-bindgen = "0.2.114"
@@ -85,6 +88,7 @@ web-sys = { version = "0.3.91", features = [
     "Node",
     "HtmlElement",
     "HtmlInputElement",
+    "HtmlButtonElement",
     "HtmlTextAreaElement",
     "HtmlCanvasElement",
     "CssStyleDeclaration",

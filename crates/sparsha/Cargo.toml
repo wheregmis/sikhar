@@ -21,6 +21,7 @@ sparsha-text = { workspace = true }
 sparsha-input = { workspace = true }
 sparsha-signals = { workspace = true }
 sparsha-widgets = { workspace = true }
+sparsha-elements = { path = "../sparsha-elements" }
 wgpu = { workspace = true }
 winit = { workspace = true }
 pollster = { workspace = true }

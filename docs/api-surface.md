@@ -16,15 +16,16 @@ Stable for 1.0:
     - function components can read provider-scoped subtree values through `ComponentContext::use_context::<T>() -> Option<T>`, `use_context_or(...)`, and `use_context_or_else(...)`
     - built-in framework resources remain on dedicated component accessors such as `viewport()`, `navigator()`, and `task_runtime()`
     - responsive text roles stay on the builder surface through `Text::builder().variant(TextVariant::Header)` rather than shortcut constructors, and paragraph behavior stays on the same path via `line_height(...)`, `fill_width(...)`, `wrap(TextWrap::Word)`, `max_lines(...)`, and overflow policies such as `TextOverflow::Clip` and `TextOverflow::Ellipsis`
+  - element composition lane (GPUI-inspired): `div()`, `text()`, `element_button()`, `Styled` utilities (`flex`, `flex_col`, `gap_3`, `p_4`, `size_full`, `overflow_scroll`, ...), `IntoElement`, `ParentElement`, `element_component().render(...).call()`, and `element_root(...)`; see `docs/elements.md`
   - specialized lane: dedicated primitives such as `ForEach`, `DrawSurface`, animation helpers, and expert-only style value types
   - expert lane: low-level `Widget` and context APIs for manual custom widgets
-- component authoring helpers: `component`, `Component`, `ComponentContext`, `TaskHook`
+- component authoring helpers: `component`, `element_component`, `Component`, `ElementComponent`, `ComponentContext`, `TaskHook`
 - theme and accessibility configuration types re-exported from `sparsha-widgets`; normal theme customization uses fluent `Theme` methods such as `brand(...)`, `background(...)`, `surface(...)`, `text(...)`, `type_scale(...)`, `radius(...)`, `control_size(...)`, and `control_padding(...)`
 - task runtime types: `TaskRuntime`, `TaskRuntimeInitError`, `TaskHandle`, `TaskResult`, `TaskStatus`, `TaskKey`, `TaskId`, `TaskPayload`, `TaskPolicy`, `Generation`
   - supported built-in task kinds in 1.0: `echo`, `sleep_echo`, `analyze_text`
   - custom task registration is not part of the 1.0 contract
 - `prelude`
-- sub-crate re-exports: `core`, `input`, `layout`, `render`, `signals`, `text`, `widgets`
+- sub-crate re-exports: `core`, `elements`, `input`, `layout`, `render`, `signals`, `text`, `widgets`
 - `init_web` on `wasm32`
 
 Internal/provisional:
@@ -137,6 +138,18 @@ Stable for 1.0:
 
 - the public signal/runtime API exposed at the crate root, including `Signal`, `ReadSignal`, `WriteSignal`, `Memo`, `Effect`, `RuntimeHandle`, `DirtyFlags`, and `SubscriberKind`
 
+## `sparsha-elements`
+
+Stable for 1.0 (element lane):
+
+- `div`, `text`, `button`, `Div`, `TextElement`, `ButtonElement`
+- `StyleRefinement`, `Styled`, `IntoElement`, `ParentElement`, `Render`, `ElementRenderContext`
+- `tailwind_map`, `taffy_map`, `px`, `Pixels`
+
+Internal/provisional:
+
+- `ElementKind::Any` widget bridge payloads
+
 ## `sparsha-widgets`
 
 Stable for 1.0:
@@ -145,6 +158,7 @@ Stable for 1.0:
 - editing/accessibility widgets: `TextArea`, `Semantics`
 - accessibility metadata types: `AccessibilityInfo`, `AccessibilityRole`, `AccessibilityAction`
 - `IntoWidget`
+- element bridge: `element_root`, `element_to_widget`, `ElementRoot`, `ElementDomSnapshot`
 - widget/context types re-exported from the crate root, including `MainAxisAlignment`, `CrossAxisAlignment`, `Alignment`, `TextWrap`, and `TextOverflow`
 - `Theme`, with fluent customization methods; raw token buckets such as color, typography, spacing, radius, and control structs are implementation details rather than the 1.0 authoring surface
 - `styles`, `taffy`, and `WidgetId` convenience re-exports

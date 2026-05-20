@@ -1,0 +1,16 @@
+[application]
+name = "hello-gpui"
+public_dir = "../web-public"
+
+[web.app]
+title = "Hello GPUI - Sparsha"
+
+[web.resource.dev]
+script = ["/dioxus-hotpatch-wasm-bindgen-shim.js"]
+
+[web.wasm]
+opt-level = "s"
+
+[bundle]
+identifier = "dev.sparsha.hello_gpui"
+version = "0.1.0"

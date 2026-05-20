@@ -17,6 +17,7 @@ The canonical authoring surface uses a semantic split: `App::builder()`, `Router
 | `hybrid-overlay` | DOM-backed UI with a hybrid GPU surface on the web path |
 | `showcase` | Hash-routed public preview surface with component samples, nested `Provider` context demos, and manual rendering checks |
 | `todo` | Bon-backed function components, signals, keyed `ForEach`, routing, theme-backed button variants, and background task hooks in a small app |
+| `hello-gpui` | GPUI-inspired element composition (`div().flex().gap_3()`), `element_component()`, Tailwind DOM on web, Taffy + DrawList on native |
 
 ## Native
 
@@ -28,6 +29,7 @@ cargo run -p fractal-clock --release
 cargo run -p hybrid-overlay
 cargo run -p showcase
 cargo run -p todo
+cargo run -p hello-gpui
 ```
 
 ## Web
@@ -40,7 +42,10 @@ Run an example with web hotpatching:
 rustup target add wasm32-unknown-unknown
 dx serve --hotpatch --platform web --package counter --features hotpatch
 dx serve --hotpatch --platform web --package todo --features hotpatch
+dx serve --platform web --package hello-gpui
 ```
+
+`hello-gpui` uses the same `public_dir` and `dioxus-hotpatch-wasm-bindgen-shim.js` dev script as the other examples (required for Dioxus 0.7 wasm load). Hard-refresh the browser after config changes to avoid stale wasm/JS cache.
 
 Dioxus repo-root static workflow:
 

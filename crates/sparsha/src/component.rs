@@ -4,7 +4,11 @@ use sparsha_layout::taffy::prelude::Style;
 use sparsha_layout::WidgetId;
 use sparsha_signals::{Effect, Memo, Signal};
 use sparsha_widgets::context::BuildStateStore;
-use sparsha_widgets::{current_viewport, BuildContext, IntoWidget, Theme, ViewportInfo, Widget};
+use sparsha_elements::{ElementNode, ElementRenderContext};
+use sparsha_widgets::{
+    current_viewport, element_to_widget, BuildContext, ElementDomSnapshot, IntoWidget, Theme,
+    ViewportInfo, Widget,
+};
 use std::any::Any;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -275,6 +279,60 @@ where
     Component::new(render)
 }
 
+/// A function component host that renders an element tree.
+pub struct ElementComponent<F> {
+    id: WidgetId,
+    render: F,
+    element: ElementNode,
+    children: Vec<Box<dyn Widget>>,
+}
+
+impl<F> ElementComponent<F> {
+    fn new(render: F) -> Self {
+        Self {
+            id: WidgetId::default(),
+            render,
+            element: ElementNode::div(),
+            children: Vec::new(),
+        }
+    }
+}
+
+/// Build a widget from a function component that returns an element tree.
+#[builder]
+pub fn element_component<F>(render: F) -> ElementComponent<F>
+where
+    F: for<'a> Fn(&'a mut ComponentContext<'a>) -> ElementNode + 'static,
+{
+    ElementComponent::new(render)
+}
+
+impl ElementRenderContext for ComponentContext<'_> {
+    fn theme_background(&self) -> sparsha_core::Color {
+        self.theme().background_color()
+    }
+
+    fn theme_text(&self) -> sparsha_core::Color {
+        self.theme().text_color()
+    }
+
+    fn theme_muted_text(&self) -> sparsha_core::Color {
+        self.theme().muted_text_color()
+    }
+
+    fn theme_brand(&self) -> sparsha_core::Color {
+        self.theme().primary_color()
+    }
+
+    fn theme_surface(&self) -> sparsha_core::Color {
+        self.theme().surface_color()
+    }
+
+    fn theme_border(&self) -> sparsha_core::Color {
+        self.theme().border_color()
+    }
+}
+
 impl<F, W> Widget for Component<F>
 where
     F: for<'a> Fn(&'a mut ComponentContext<'a>) -> W + 'static,
@@ -322,6 +380,76 @@ where
 
     fn children_mut(&mut self) -> &mut [Box<dyn Widget>] {
         &mut self.children
+    }
+}
+
+impl<F> Widget for ElementComponent<F>
+where
+    F: for<'a> Fn(&'a mut ComponentContext<'a>) -> ElementNode + 'static,
+{
+    fn id(&self) -> WidgetId {
+        self.id
+    }
+
+    fn set_id(&mut self, id: WidgetId) {
+        self.id = id;
+    }
+
+    fn style(&self) -> Style {
+        self.children
+            .first()
+            .map(|child| child.style())
+            .unwrap_or_else(|| sparsha_elements::taffy_map::style_from_refinement(&self.element.style))
+    }
+
+    fn rebuild(&mut self, ctx: &mut BuildContext) {
+        let mut state = ctx
+            .take_boxed_state()
+            .and_then(|state| state.downcast::<StoredComponentState>().ok())
+            .map(|state| *state)
+            .unwrap_or_default();
+
+        self.element = crate::hotpatch::call(|| {
+            let mut component_ctx = ComponentContext::new(ctx, &mut state);
+            (self.render)(&mut component_ctx)
+        });
+        state.hooks.truncate(state.active_hooks);
+
+        self.children = vec![element_to_widget(&self.element)];
+        if let Some(child) = self.children.first_mut() {
+            child.rebuild(ctx);
+        }
+        ctx.store_boxed_state(Box::new(state));
+    }
+
+    fn paint(&self, ctx: &mut sparsha_widgets::PaintContext) {
+        if let Some(child) = self.children.first() {
+            child.paint(ctx);
+        }
+    }
+
+    fn paint_after_children(&self, ctx: &mut sparsha_widgets::PaintContext) {
+        if let Some(child) = self.children.first() {
+            child.paint_after_children(ctx);
+        }
+    }
+
+    fn children(&self) -> &[Box<dyn Widget>] {
+        &self.children
+    }
+
+    fn children_mut(&mut self) -> &mut [Box<dyn Widget>] {
+        &mut self.children
+    }
+
+    fn element_dom_snapshot(&self) -> Option<ElementDomSnapshot> {
+        Some(ElementDomSnapshot {
+            root: self.element.clone(),
+        })
+    }
+
+    fn uses_element_dom(&self) -> bool {
+        true
     }
 }
 

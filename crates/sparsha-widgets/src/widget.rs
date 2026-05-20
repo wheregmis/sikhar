@@ -120,6 +120,16 @@ pub trait Widget {
         false
     }
 
+    /// Return an element DOM snapshot when this widget hosts an element tree for web Tailwind rendering.
+    fn element_dom_snapshot(&self) -> Option<crate::ElementDomSnapshot> {
+        None
+    }
+
+    /// Whether the web runtime should prefer structural Tailwind DOM over draw-list DOM for this subtree root.
+    fn uses_element_dom(&self) -> bool {
+        false
+    }
+
     /// Whether this widget is a scroll container.
     fn is_scroll_container(&self) -> bool {
         false

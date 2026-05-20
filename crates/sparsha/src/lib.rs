@@ -65,6 +65,8 @@ mod tasks;
 #[cfg(target_arch = "wasm32")]
 mod dom_renderer;
 #[cfg(target_arch = "wasm32")]
+mod dom_tailwind_renderer;
+#[cfg(target_arch = "wasm32")]
 mod web;
 #[cfg(target_arch = "wasm32")]
 mod web_app;
@@ -74,7 +76,11 @@ mod web_surface_manager;
 mod web_text_metrics;
 
 pub use app::{App, AppRunError, ThemeInput, ThemeMode, ThemeModeInput};
-pub use component::{component, Component, ComponentContext, TaskHook};
+pub use component::{component, element_component, Component, ComponentContext, ElementComponent, TaskHook};
+pub use sparsha_elements::{
+    self, button as element_button, div, text as element_text, ButtonElement, Div, ElementNode,
+    IntoElement, ParentElement, Render, Styled, TextElement,
+};
 pub use router::{hash_to_path, path_to_hash, Navigator, Route, Router, RouterTransition};
 pub use sparsha_widgets::{
     current_theme, current_viewport, lerp_color, AccessibilityAction, AccessibilityInfo,
@@ -99,9 +105,11 @@ pub mod prelude {
         TaskResultSubscription, TaskRuntime, TaskStatus,
     };
     pub use crate::{
-        component, App, AppRunError, Component, ComponentContext, Navigator, Route, Router,
-        RouterTransition, TaskHook, ThemeInput, ThemeMode, ThemeModeInput,
+        component, element_component, App, AppRunError, Component, ComponentContext,
+        ElementComponent, Navigator, Route, Router, RouterTransition, TaskHook, ThemeInput,
+        ThemeMode, ThemeModeInput,
     };
+    pub use sparsha_elements::{div, IntoElement, ParentElement, Styled};
     pub use sparsha_core::{Color, Rect};
     pub use sparsha_input::{InputEvent, Key, Modifiers, PointerButton};
     pub use sparsha_layout::taffy;
